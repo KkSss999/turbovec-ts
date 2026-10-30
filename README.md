@@ -114,6 +114,11 @@ Python environment that has the package:
 TURBOVEC_PYTHON=/path/to/venv/bin/python bun test
 ```
 
+## Electron
+
+Use a `utilityProcess` that owns the index; the renderer talks over narrow IPC. See
+[`examples/electron/README.md`](examples/electron/README.md).
+
 ## License
 
 MIT. See [LICENSE](LICENSE).
