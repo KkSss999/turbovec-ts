@@ -222,3 +222,40 @@ test('maps prefixed errors for non-native callers', () => {
     expect(error.message).toBe('disk failed');
   }
 });
+
+test('swapRemove moves the last slot into the removed position', async () => {
+  const index = new TurboQuantIndex(8, 4);
+  await index.add(vectors);
+
+  const moved = await index.swapRemove(0);
+
+  expect(moved).toBe(2);
+  expect(index.length).toBe(2);
+
+  const result = await index.search(new Float32Array([0, 0, 1, 0, 0, 0, 0, 0]), 1);
+  expect(result.indices[0]).toBe(0);
+});
+
+test('swapRemove rejects an out-of-range slot', async () => {
+  const index = new TurboQuantIndex(8, 4);
+  await index.add(vectors);
+
+  let error: Error | undefined;
+  try {
+    await index.swapRemove(99);
+  } catch (cause) {
+    error = cause instanceof Error ? cause : new Error(String(cause));
+  }
+
+  expect(error).toBeInstanceOf(TurbovecError);
+  if (error instanceof TurbovecError) {
+    expect(error.code).toBe('ERR_TURBOVEC_INVALID_INPUT');
+  }
+});
+
+test('iterIds returns the external ids in slot order', async () => {
+  const index = new IdMapIndex(8, 4);
+  await index.addWithIds(vectors, new BigUint64Array([10n, 20n, 30n]));
+
+  expect(Array.from(index.iterIds())).toEqual([10n, 20n, 30n]);
+});

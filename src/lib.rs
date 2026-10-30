@@ -140,6 +140,27 @@ impl TurboQuantIndex {
     }
 
     #[napi]
+    pub async fn swap_remove(&self, idx: u32) -> Result<u32> {
+        let inner = Arc::clone(&self.inner);
+
+        napi::tokio::task::spawn_blocking(move || -> Result<u32> {
+            let mut guard = inner.write().map_err(|_| lock_error())?;
+            let index = guard.as_mut().ok_or_else(disposed)?;
+            let idx = idx as usize;
+            if idx >= index.len() {
+                return Err(err(
+                    ErrorCode::InvalidInput,
+                    format!("slot {idx} out of range for length {}", index.len()),
+                ));
+            }
+            u32::try_from(index.swap_remove(idx))
+                .map_err(|_| err(ErrorCode::Native, "slot exceeds u32"))
+        })
+        .await
+        .map_err(task_error)?
+    }
+
+    #[napi]
     pub async fn search(
         &self,
         queries: Float32Array,
@@ -365,6 +386,13 @@ impl IdMapIndex {
         let guard = self.inner.read().map_err(|_| lock_error())?;
         let index = guard.as_ref().ok_or_else(disposed)?;
         Ok(index.contains(id))
+    }
+
+    #[napi]
+    pub fn iter_ids(&self) -> Result<BigUint64Array> {
+        let guard = self.inner.read().map_err(|_| lock_error())?;
+        let index = guard.as_ref().ok_or_else(disposed)?;
+        Ok(index.iter_ids().collect::<Vec<u64>>().into())
     }
 
     #[napi]
