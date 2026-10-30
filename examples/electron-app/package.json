@@ -1,0 +1,19 @@
+{
+  "name": "turbovec-ts-electron-smoke",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Packaged Electron utilityProcess smoke test for turbovec-ts",
+  "main": "main.cjs",
+  "scripts": {
+    "stage": "node scripts/stage.cjs",
+    "package": "bun run stage && electron-packager . turbovec-smoke --platform=linux --arch=x64 --out=dist --overwrite --asar --asar.unpack=**/*.node",
+    "smoke": "bun run package && timeout 45 ./dist/turbovec-smoke-linux-x64/turbovec-smoke --no-sandbox"
+  },
+  "dependencies": {
+    "turbovec-ts": "file:../.."
+  },
+  "devDependencies": {
+    "@electron/packager": "^20.3.0",
+    "electron": "^45.2.0"
+  }
+}

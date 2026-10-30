@@ -55,7 +55,8 @@
     "build:cjs": "napi build --platform --release --js native.cjs --dts native.d.ts",
     "build:esm": "napi build --platform --release --esm --js native.js --dts native.d.ts",
     "build:errors": "bun build src/errors.ts --target node --format esm --outfile errors.js && bun build src/errors.ts --target node --format cjs --outfile errors.cjs",
-    "bench": "bun run build && bun bench/wrapper.ts"
+    "bench": "bun run build && bun bench/wrapper.ts",
+    "smoke:electron": "bun run build && cd examples/electron-app && bun run smoke"
   },
   "devDependencies": {
     "@napi-rs/cli": "^3.10.9",

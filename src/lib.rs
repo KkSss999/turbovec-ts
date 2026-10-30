@@ -1,3 +1,4 @@
+use std::io::Write;
 use std::sync::atomic::{AtomicI64, Ordering};
 use std::sync::{Arc, RwLock};
 
@@ -64,6 +65,22 @@ fn bigint_to_u64(value: BigInt) -> Result<u64> {
         return Err(err(ErrorCode::InvalidInput, "id must fit in u64"));
     }
     Ok(value)
+}
+
+#[derive(Default)]
+struct CountingWriter {
+    len: usize,
+}
+
+impl Write for CountingWriter {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        self.len = self.len.saturating_add(buf.len());
+        Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
 }
 
 fn estimated_bytes(dim: usize, bit_width: usize, n: usize, with_ids: bool) -> f64 {
@@ -612,6 +629,19 @@ impl IdMapIndex {
             *guard = Some(fresh);
         }
         self.sync_external_memory(env)
+    }
+
+    #[napi(getter)]
+    pub fn serialized_length(&self) -> Result<f64> {
+        let guard = self.inner.read().map_err(|_| lock_error())?;
+        let Some(index) = guard.as_ref() else {
+            return Ok(0.0);
+        };
+        let mut counter = CountingWriter::default();
+        index
+            .write_to_writer(&mut counter)
+            .map_err(|e| io_error(e.to_string()))?;
+        Ok(counter.len as f64)
     }
 
     #[napi]

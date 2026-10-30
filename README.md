@@ -11,7 +11,8 @@ below the first planned public milestone, 0.1.0.
 - No CI, GitHub Actions, or release automation until 1.0.0.
 - No npm publication until explicitly approved.
 - Local checks are the gate: `bun run check`, `bun test`, and a native build.
-- Only Linux x64 has been built and smoke-tested locally. Other platforms are unverified.
+- Linux x64 has been built and smoke-tested, including a packaged Electron app. Other
+  platforms are unverified.
 
 ## Requirements
 
@@ -89,8 +90,13 @@ index.calibrationState; // 'uncalibrated' | 'calibrated'
 ```
 
 `sync(path)` writes only the change since the previous sync and is available on both index
-types. `IdMapIndex` uses `.tvim` files. `sync` takes the exclusive index lock, so searches
-wait while a sync is writing.
+types. `IdMapIndex` uses `.tvim` files.
+
+Locking:
+
+- `write` takes the read lock: searches continue, mutations wait.
+- `sync` takes the write lock: searches and mutations wait until it finishes.
+- `clear`, `dispose`, `add`, `remove`, and `swapRemove` take the write lock.
 
 `dispose()` releases the native index. Later calls fail with an `ERR_TURBOVEC_DISPOSED`
 message prefix. `isDisposed` reports the state.
@@ -98,6 +104,7 @@ message prefix. `isDisposed` reports the state.
 `estimatedBytes` is a rough resident-size estimate for the compressed codes, scales,
 calibration, ids, and headers. It excludes allocator overhead, SIMD caches, and transient
 scratch buffers; use it for monitoring and guardrails, not exact accounting.
+`serializedLength` is exact and available on both index types.
 
 After mutations the wrapper reports the estimate to V8 through
 `napi_adjust_external_memory`, so the JavaScript GC can account for the native index
@@ -142,7 +149,9 @@ your machine.
 ## Electron
 
 Use a `utilityProcess` that owns the index; the renderer talks over narrow IPC. See
-[`examples/electron/README.md`](examples/electron/README.md).
+[`examples/electron/README.md`](examples/electron/README.md) for the architecture and
+[`examples/electron-app/README.md`](examples/electron-app/README.md) for a packaged smoke
+test that builds and runs the app.
 
 ## License
 

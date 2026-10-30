@@ -292,3 +292,69 @@ test('reports the exact serialized length', async () => {
 
   expect(index.serializedLength).toBe(index.toBytes().length);
 });
+
+test('reports the exact id map serialized length', async () => {
+  const index = new IdMapIndex(8, 4);
+  await index.addWithIds(vectors, new BigUint64Array([10n, 20n, 30n]));
+
+  expect(index.serializedLength).toBe(index.toBytes().length);
+});
+
+test('sync and search can run with the same index', async () => {
+  const dir = await Bun.$`mktemp -d`.text();
+  const path = `${dir.trim()}/index.tv`;
+  try {
+    const index = new TurboQuantIndex(8, 4);
+    await index.add(vectors);
+
+    const [search] = await Promise.all([index.search(query, 1), index.sync(path)]);
+
+    expect(search.indices[0]).toBe(0);
+    expect((await TurboQuantIndex.load(path)).length).toBe(3);
+  } finally {
+    await Bun.$`rm -rf ${dir.trim()}`;
+  }
+});
+
+test('concurrent loads stay independent', async () => {
+  const dir = await Bun.$`mktemp -d`.text();
+  const path = `${dir.trim()}/index.tv`;
+  try {
+    const index = new TurboQuantIndex(8, 4);
+    await index.add(vectors);
+    await index.write(path);
+
+    const [first, second] = await Promise.all([
+      TurboQuantIndex.load(path),
+      TurboQuantIndex.load(path),
+    ]);
+
+    expect(first.length).toBe(3);
+    expect(second.length).toBe(3);
+    expect(first).not.toBe(second);
+  } finally {
+    await Bun.$`rm -rf ${dir.trim()}`;
+  }
+});
+
+test('dispose racing a search does not deadlock', async () => {
+  const index = new TurboQuantIndex(8, 4);
+  await index.add(vectors);
+
+  await Promise.allSettled([index.search(query, 1), Promise.resolve(index.dispose())]);
+
+  expect(index.isDisposed).toBe(true);
+});
+
+test('clear racing an add does not deadlock', async () => {
+  const index = new TurboQuantIndex(8, 4);
+  await index.add(vectors);
+
+  await Promise.all([
+    index.add(new Float32Array([0, 0, 0, 1, 0, 0, 0, 0])),
+    Promise.resolve(index.clear()),
+  ]);
+
+  expect(index.isDisposed).toBe(false);
+  expect(index.length).toBeGreaterThanOrEqual(0);
+});

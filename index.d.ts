@@ -39,6 +39,7 @@ export declare class IdMapIndex {
   constructor(dim: number, bitWidth?: number | null);
   addWithIds(vectors: Float32Array, ids: BigUint64Array): Promise<void>;
   clear(): void;
+  get serializedLength(): number;
   remove(id: bigint): Promise<boolean>;
   contains(id: bigint): boolean;
   iterIds(): BigUint64Array;
