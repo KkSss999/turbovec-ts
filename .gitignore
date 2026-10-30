@@ -20,3 +20,4 @@ coverage/
 /native.d.ts
 /errors.js
 /errors.cjs
+.npmrc
