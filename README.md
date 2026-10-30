@@ -97,7 +97,9 @@ lock, then releasing it for fsync and rename. Searches continue during the write
 wait while the snapshot is being written. It is not incremental and does not bind the index to
 the path. Stale `<name>.tmp.<pid>.<seq>` siblings older than one hour are removed best-effort
 before a new checkpoint. Concurrent checkpoints to one path each use a unique temp file; the
-last rename wins and the result is one complete snapshot, never a mix.
+last rename wins and the result is one complete snapshot, never a mix. `durable=false` keeps
+the temp-file + rename protocol but skips the fsync, so a power loss shortly after the call
+can lose the new file.
 
 Locking:
 

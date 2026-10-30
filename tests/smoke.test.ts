@@ -508,3 +508,44 @@ test('checkpoint cleanup uses the one-hour boundary', async () => {
     await Bun.$`rm -rf ${dir.trim()}`;
   }
 });
+
+test('checkpoint with durable=false still writes a loadable file', async () => {
+  const dir = await Bun.$`mktemp -d`.text();
+  const path = `${dir.trim()}/fast.tv`;
+  try {
+    const index = new TurboQuantIndex(8, 4);
+    await index.add(vectors);
+    await index.checkpoint(path, false);
+
+    const loaded = await TurboQuantIndex.load(path);
+    expect(loaded.length).toBe(3);
+    expect((await readdir(dir.trim())).filter((name) => name.includes('.tmp.'))).toEqual([]);
+  } finally {
+    await Bun.$`rm -rf ${dir.trim()}`;
+  }
+});
+
+test.skipIf(!pythonInteropAvailable())('loads an id map checkpoint in Python', async () => {
+  const dir = await Bun.$`mktemp -d`.text();
+  const path = `${dir.trim()}/checkpoint.tvim`;
+  try {
+    const index = new IdMapIndex(8, 4);
+    await index.addWithIds(vectors, new BigUint64Array([10n, 20n, 30n]));
+    await index.checkpoint(path);
+
+    const script = `
+import sys
+import numpy as np
+from turbovec import IdMapIndex
+
+index = IdMapIndex.load(sys.argv[1])
+assert len(index) == 3
+scores, ids = index.search(np.array([[1, 0, 0, 0, 0, 0, 0, 0]], dtype=np.float32), 1)
+assert int(ids[0][0]) == 10
+`;
+    const result = Bun.spawnSync([python, '-c', script, path]);
+    if (result.exitCode !== 0) throw new Error(result.stderr.toString());
+  } finally {
+    await Bun.$`rm -rf ${dir.trim()}`;
+  }
+});
