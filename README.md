@@ -121,6 +121,16 @@ Python environment that has the package:
 TURBOVEC_PYTHON=/path/to/venv/bin/python bun test
 ```
 
+## Benchmarks
+
+```bash
+bun run bench
+```
+
+Compares the wrapped public API against the generated native loader on a synthetic
+10K x 1536 index. Use it to check that the error-wrapping Proxy stays within noise on
+your machine.
+
 ## Electron
 
 Use a `utilityProcess` that owns the index; the renderer talks over narrow IPC. See

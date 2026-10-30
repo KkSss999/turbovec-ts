@@ -54,7 +54,8 @@
     "test": "bun test",
     "build:cjs": "napi build --platform --release --js native.cjs --dts native.d.ts",
     "build:esm": "napi build --platform --release --esm --js native.js --dts native.d.ts",
-    "build:errors": "bun build src/errors.ts --target node --format esm --outfile errors.js && bun build src/errors.ts --target node --format cjs --outfile errors.cjs"
+    "build:errors": "bun build src/errors.ts --target node --format esm --outfile errors.js && bun build src/errors.ts --target node --format cjs --outfile errors.cjs",
+    "bench": "bun run build && bun bench/wrapper.ts"
   },
   "devDependencies": {
     "@napi-rs/cli": "^3.10.9",
