@@ -68,6 +68,31 @@ index.contains(20n);
 `add`, `addWithIds`, `remove`, and `search` return promises. `contains`, `toBytes`, and
 `fromBytes` are synchronous.
 
+### Persistence and calibration
+
+```ts
+await index.write('index.tv'); // durable by default
+await index.write('index.tv', false); // skip fsync
+
+const loaded = await TurboQuantIndex.load('index.tv');
+
+await index.calibrate(sample);
+await index.prepare();
+index.calibrationState; // 'uncalibrated' | 'calibrated'
+```
+
+`sync(path)` writes only the change since the previous sync and is available on both index
+types. `IdMapIndex` uses `.tvim` files.
+
+### Python interop tests
+
+The interop tests are skipped when `python3` cannot import `turbovec`. Point them at a
+Python environment that has the package:
+
+```bash
+TURBOVEC_PYTHON=/path/to/venv/bin/python bun test
+```
+
 ## License
 
 MIT. See [LICENSE](LICENSE).

@@ -72,3 +72,110 @@ test('commonjs loader exposes the classes', () => {
   expect(typeof require('../index.cjs').TurboQuantIndex).toBe('function');
   expect(typeof require('../index.cjs').IdMapIndex).toBe('function');
 });
+
+test('writes, loads, and syncs through files', async () => {
+  const dir = await Bun.$`mktemp -d`.text();
+  const path = `${dir.trim()}/index.tv`;
+  try {
+    const index = new TurboQuantIndex(8, 4);
+    await index.add(vectors);
+    await index.write(path);
+
+    const loaded = await TurboQuantIndex.load(path);
+    expect(loaded.length).toBe(3);
+
+    await loaded.add(new Float32Array([0, 0, 0, 1, 0, 0, 0, 0]));
+    await loaded.sync(path);
+
+    const restored = await TurboQuantIndex.load(path);
+    expect(restored.length).toBe(4);
+  } finally {
+    await Bun.$`rm -rf ${dir.trim()}`;
+  }
+});
+
+test('calibrates and prepares an index', async () => {
+  const index = new TurboQuantIndex(8, 4);
+  await index.add(vectors);
+
+  expect(index.calibrationState).toBe('uncalibrated');
+  await index.calibrate(vectors);
+  expect(index.calibrationState).toBe('calibrated');
+  await index.prepare();
+});
+
+test('round-trips an id map through a file', async () => {
+  const dir = await Bun.$`mktemp -d`.text();
+  const path = `${dir.trim()}/index.tvim`;
+  try {
+    const index = new IdMapIndex(8, 4);
+    await index.addWithIds(vectors, new BigUint64Array([10n, 20n, 30n]));
+    await index.write(path);
+
+    const loaded = await IdMapIndex.load(path);
+    expect(loaded.length).toBe(3);
+    expect(loaded.contains(20n)).toBe(true);
+  } finally {
+    await Bun.$`rm -rf ${dir.trim()}`;
+  }
+});
+
+const python = process.env.TURBOVEC_PYTHON ?? 'python3';
+
+function pythonInteropAvailable(): boolean {
+  try {
+    return Bun.spawnSync([python, '-c', 'import turbovec']).exitCode === 0;
+  } catch {
+    return false;
+  }
+}
+
+test.skipIf(!pythonInteropAvailable())('loads a file written by Python', async () => {
+  const dir = await Bun.$`mktemp -d`.text();
+  const path = `${dir.trim()}/python.tv`;
+  try {
+    const script = `
+import sys
+import numpy as np
+from turbovec import TurboQuantIndex
+
+index = TurboQuantIndex(dim=8, bit_width=4)
+index.add(np.array([[1, 0, 0, 0, 0, 0, 0, 0]], dtype=np.float32))
+index.write(sys.argv[1])
+`;
+    const result = Bun.spawnSync([python, '-c', script, path]);
+    if (result.exitCode !== 0) throw new Error(result.stderr.toString());
+
+    const loaded = await TurboQuantIndex.load(path);
+    const search = await loaded.search(query, 1);
+    expect(loaded.length).toBe(1);
+    expect(search.indices[0]).toBe(0);
+  } finally {
+    await Bun.$`rm -rf ${dir.trim()}`;
+  }
+});
+
+test.skipIf(!pythonInteropAvailable())('writes a file Python can load', async () => {
+  const dir = await Bun.$`mktemp -d`.text();
+  const path = `${dir.trim()}/node.tv`;
+  try {
+    const index = new TurboQuantIndex(8, 4);
+    await index.add(vectors);
+    await index.write(path);
+
+    const script = `
+import sys
+import numpy as np
+from turbovec import TurboQuantIndex
+
+index = TurboQuantIndex.load(sys.argv[1])
+assert len(index) == 3
+scores, indices = index.search(np.array([[1, 0, 0, 0, 0, 0, 0, 0]], dtype=np.float32), 1)
+assert int(indices[0][0]) == 0
+`;
+    const result = Bun.spawnSync([python, '-c', script, path]);
+    if (result.exitCode !== 0) throw new Error(result.stderr.toString());
+  } finally {
+    await Bun.$`rm -rf ${dir.trim()}`;
+  }
+});
