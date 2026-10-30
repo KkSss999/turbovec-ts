@@ -43,7 +43,7 @@ async function searchOnce(index: IndexHandle): Promise<number> {
 }
 
 function median(values: number[]): number {
-  const sorted = [...values].sort((a, b) => a - b);
+  const sorted = values.toSorted((a, b) => a - b);
   return sorted[Math.floor(sorted.length / 2)] ?? 0;
 }
 

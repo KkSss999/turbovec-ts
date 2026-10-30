@@ -297,6 +297,23 @@ impl TurboQuantIndex {
     }
 
     #[napi]
+    pub fn clear(&self, env: Env) -> Result<()> {
+        let fresh = TurboCore::new(self.dim as usize, self.bit_width as usize)
+            .map_err(|e| native_error(e.to_string()))?;
+        {
+            let mut guard = self.inner.write().map_err(|_| lock_error())?;
+            *guard = Some(fresh);
+        }
+        self.sync_external_memory(env)
+    }
+
+    #[napi(getter)]
+    pub fn serialized_length(&self) -> Result<f64> {
+        let guard = self.inner.read().map_err(|_| lock_error())?;
+        Ok(guard.as_ref().map_or(0.0, |index| index.serialized_len() as f64))
+    }
+
+    #[napi]
     pub fn sync_external_memory(&self, env: Env) -> Result<()> {
         let current = {
             let guard = self.inner.read().map_err(|_| lock_error())?;
@@ -584,6 +601,17 @@ impl IdMapIndex {
         })
         .await
         .map_err(task_error)?
+    }
+
+    #[napi]
+    pub fn clear(&self, env: Env) -> Result<()> {
+        let fresh = IdCore::new(self.dim as usize, self.bit_width as usize)
+            .map_err(|e| native_error(e.to_string()))?;
+        {
+            let mut guard = self.inner.write().map_err(|_| lock_error())?;
+            *guard = Some(fresh);
+        }
+        self.sync_external_memory(env)
     }
 
     #[napi]

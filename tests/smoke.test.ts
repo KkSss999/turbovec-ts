@@ -272,3 +272,23 @@ test('reports estimated memory and disposed state', async () => {
   expect(index.isDisposed).toBe(true);
   expect(index.estimatedBytes).toBe(0);
 });
+
+test('clears an index without disposing it', async () => {
+  const index = new TurboQuantIndex(8, 4);
+  await index.add(vectors);
+  await index.calibrate(vectors);
+
+  index.clear();
+
+  expect(index.length).toBe(0);
+  expect(index.isDisposed).toBe(false);
+  expect(index.calibrationState).toBe('uncalibrated');
+  expect(index.estimatedBytes).toBeGreaterThan(0);
+});
+
+test('reports the exact serialized length', async () => {
+  const index = new TurboQuantIndex(8, 4);
+  await index.add(vectors);
+
+  expect(index.serializedLength).toBe(index.toBytes().length);
+});

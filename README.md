@@ -46,6 +46,9 @@ await index.add(vectors);
 const result = await index.search(query, 1);
 
 await index.swapRemove(0); // moves the last slot into slot 0
+index.clear(); // reset to an empty index with the same dim/bit width
+
+index.serializedLength; // exact bytes toBytes() will return
 
 const bytes = index.toBytes();
 const restored = TurboQuantIndex.fromBytes(bytes);
@@ -66,6 +69,7 @@ const filtered = await index.search(query, 2, new BigUint64Array([10n, 30n]));
 await index.remove(10n);
 index.contains(20n);
 index.iterIds(); // BigUint64Array in slot order
+index.clear(); // reset to an empty id map
 ```
 
 `add`, `addWithIds`, `remove`, and `search` return promises. `contains`, `toBytes`, and

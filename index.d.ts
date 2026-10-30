@@ -16,6 +16,8 @@ export declare class TurboQuantIndex {
   constructor(dim: number, bitWidth?: number | null);
   add(vectors: Float32Array): Promise<void>;
   swapRemove(index: number): Promise<number>;
+  clear(): void;
+  get serializedLength(): number;
   search(queries: Float32Array, k: number, mask?: Uint8Array | null): Promise<SearchResult>;
   toBytes(): Buffer;
   static fromBytes(data: Buffer): TurboQuantIndex;
@@ -36,6 +38,7 @@ export declare class TurboQuantIndex {
 export declare class IdMapIndex {
   constructor(dim: number, bitWidth?: number | null);
   addWithIds(vectors: Float32Array, ids: BigUint64Array): Promise<void>;
+  clear(): void;
   remove(id: bigint): Promise<boolean>;
   contains(id: bigint): boolean;
   iterIds(): BigUint64Array;
