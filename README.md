@@ -49,7 +49,24 @@ const bytes = index.toBytes();
 const restored = TurboQuantIndex.fromBytes(bytes);
 ```
 
-`add` and `search` return promises. `toBytes` and `fromBytes` are synchronous.
+Stable external ids use `IdMapIndex`:
+
+```ts
+import { IdMapIndex } from 'turbovec-ts';
+
+const index = new IdMapIndex(8, 4);
+const ids = new BigUint64Array([10n, 20n, 30n]);
+
+await index.addWithIds(vectors, ids);
+const result = await index.search(query, 2);
+const filtered = await index.search(query, 2, new BigUint64Array([10n, 30n]));
+
+await index.remove(10n);
+index.contains(20n);
+```
+
+`add`, `addWithIds`, `remove`, and `search` return promises. `contains`, `toBytes`, and
+`fromBytes` are synchronous.
 
 ## License
 
