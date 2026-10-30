@@ -1,0 +1,62 @@
+{
+  "name": "turbovec-ts",
+  "version": "0.0.1",
+  "private": true,
+  "description": "TypeScript/Node.js bindings for turbovec, a 2-4 bit vector quantization and SIMD search library.",
+  "homepage": "https://github.com/KkSss999/turbovec-ts",
+  "bugs": {
+    "url": "https://github.com/KkSss999/turbovec-ts/issues"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KkSss999/turbovec-ts.git"
+  },
+  "files": [
+    "index.d.ts",
+    "index.js",
+    "index.cjs",
+    "*.node",
+    "README.md",
+    "LICENSE"
+  ],
+  "type": "module",
+  "main": "./index.cjs",
+  "module": "./index.js",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./index.js",
+      "require": "./index.cjs"
+    }
+  },
+  "scripts": {
+    "build": "bun run build:cjs && bun run build:esm",
+    "build:debug": "napi build --platform --js index.cjs",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check",
+    "lint": "oxlint --no-error-on-unmatched-pattern",
+    "lint:fix": "oxlint --fix",
+    "typecheck": "oxlint --type-aware --type-check --no-error-on-unmatched-pattern",
+    "check": "bun run format:check && bun run lint && bun run typecheck",
+    "test": "bun test",
+    "build:cjs": "napi build --platform --release --js index.cjs",
+    "build:esm": "napi build --platform --release --esm --js index.js"
+  },
+  "devDependencies": {
+    "@napi-rs/cli": "^3.10.9",
+    "@types/bun": "^1.4.4",
+    "@types/node": "^26.6.6",
+    "oxfmt": "^0.75.0",
+    "oxlint": "^1.90.0",
+    "oxlint-tsgolint": "^7.0.2005"
+  },
+  "napi": {
+    "binaryName": "turbovec-ts"
+  },
+  "engines": {
+    "node": ">=20.17"
+  },
+  "packageManager": "bun@1.4.4"
+}

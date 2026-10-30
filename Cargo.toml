@@ -1,0 +1,20 @@
+[package]
+name = "turbovec-ts-native"
+version = "0.0.1"
+edition = "2021"
+rust-version = "1.89"
+description = "TypeScript/Node.js bindings for turbovec"
+license = "MIT"
+repository = "https://github.com/KkSss999/turbovec-ts"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+turbovec-core = { package = "turbovec", path = "../turbovec/turbovec" }
+napi = { version = "3", features = ["napi8", "async"] }
+napi-derive = "3"
+
+[build-dependencies]
+napi-build = "2"
