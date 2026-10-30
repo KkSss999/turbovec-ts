@@ -22,7 +22,16 @@ export declare class TurboQuantIndex {
   toBytes(): Buffer;
   static fromBytes(data: Buffer): TurboQuantIndex;
   static load(path: string): Promise<TurboQuantIndex>;
+  /**
+   * Durable by default. `durable: false` skips fsync and is only process-crash safe:
+   * after a power loss the new file may be missing or truncated, and the previous file
+   * may also be lost. Use it only for disposable data.
+   */
   write(path: string, durable?: boolean | null): Promise<void>;
+  /**
+   * Full snapshot. Same durability rules as `write`; `durable: false` is not
+   * power-loss safe. See docs/versioned-checkpoint.md for a crash-safe fast pattern.
+   */
   checkpoint(path: string, durable?: boolean | null): Promise<void>;
   sync(path: string): Promise<void>;
   calibrate(sample: Float32Array): Promise<void>;
@@ -52,7 +61,16 @@ export declare class IdMapIndex {
   toBytes(): Buffer;
   static fromBytes(data: Buffer): IdMapIndex;
   static load(path: string): Promise<IdMapIndex>;
+  /**
+   * Durable by default. `durable: false` skips fsync and is only process-crash safe:
+   * after a power loss the new file may be missing or truncated, and the previous file
+   * may also be lost. Use it only for disposable data.
+   */
   write(path: string, durable?: boolean | null): Promise<void>;
+  /**
+   * Full snapshot. Same durability rules as `write`; `durable: false` is not
+   * power-loss safe. See docs/versioned-checkpoint.md for a crash-safe fast pattern.
+   */
   checkpoint(path: string, durable?: boolean | null): Promise<void>;
   sync(path: string): Promise<void>;
   calibrate(sample: Float32Array): Promise<void>;

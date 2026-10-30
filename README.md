@@ -10,7 +10,7 @@ below the first planned public milestone, 0.1.0.
 
 - No CI, GitHub Actions, or release automation until 1.0.0.
 - No npm publication until explicitly approved.
-- Local checks are the gate: `bun run check`, `bun test`, and a native build.
+- Local checks are the gate: `bun run check`, `bun run test`, and a native build.
 - Linux x64 has been built and smoke-tested, including a packaged Electron app. Other
   platforms are unverified.
 
@@ -27,7 +27,7 @@ below the first planned public milestone, 0.1.0.
 bun install
 bun run build:debug
 bun run check
-bun test
+bun run test
 ```
 
 Release-style build:
@@ -97,9 +97,13 @@ lock, then releasing it for fsync and rename. Searches continue during the write
 wait while the snapshot is being written. It is not incremental and does not bind the index to
 the path. Stale `<name>.tmp.<pid>.<seq>` siblings older than one hour are removed best-effort
 before a new checkpoint. Concurrent checkpoints to one path each use a unique temp file; the
-last rename wins and the result is one complete snapshot, never a mix. `durable=false` keeps
-the temp-file + rename protocol but skips the fsync, so a power loss shortly after the call
-can lose the new file.
+last rename wins and the result is one complete snapshot, never a mix.
+
+`durable=false` on `write` or `checkpoint` is fast but only process-crash safe. It skips fsync, so after a power loss the
+checkpoint is undefined: the new file may be missing or truncated, and the previous file may
+also be lost. Use it only for disposable or regenerable data, never as the only copy. See
+[`docs/versioned-checkpoint.md`](docs/versioned-checkpoint.md) for a crash-safe fast pattern
+built from the public primitives.
 
 Locking:
 
@@ -141,11 +145,15 @@ the native wrapper.
 
 ### Python interop tests
 
-The interop tests are skipped when `python3` cannot import `turbovec`. Point them at a
-Python environment that has the package:
+Python is not a runtime dependency and is not shipped in the npm package. It is only a second
+implementation used to verify the on-disk format.
+
+`bun run test` runs the TypeScript/native suite only. The strict interop check requires an
+explicit interpreter and refuses to run if the Python `turbovec` version differs from the Rust
+core in `Cargo.lock`:
 
 ```bash
-TURBOVEC_PYTHON=/path/to/venv/bin/python bun test
+TURBOVEC_PYTHON=/path/to/venv/bin/python bun run test:interop
 ```
 
 ## Benchmarks
