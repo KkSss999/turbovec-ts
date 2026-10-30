@@ -88,22 +88,22 @@ wait while a sync is writing.
 `dispose()` releases the native index. Later calls fail with an `ERR_TURBOVEC_DISPOSED`
 message prefix.
 
-Native errors carry a stable `ERR_TURBOVEC_*` prefix in the message (for example
-`ERR_TURBOVEC_IO`, `ERR_TURBOVEC_NATIVE`, `ERR_TURBOVEC_INVALID_INPUT`). Map them to a
-typed error with the helper:
+Native methods throw or reject with `TurbovecError` automatically:
 
 ```ts
-import { TurbovecError, toTurbovecError } from 'turbovec-ts/errors';
+import { TurbovecError } from 'turbovec-ts/errors';
 
 try {
   await index.search(query, 10);
-} catch (cause) {
-  const error = toTurbovecError(cause);
+} catch (error) {
   if (error instanceof TurbovecError) {
     console.log(error.code); // ERR_TURBOVEC_DISPOSED, ERR_TURBOVEC_IO, ...
   }
 }
 ```
+
+`toTurbovecError(error)` is still available for mapping errors that did not come through
+the native wrapper.
 
 ### Python interop tests
 

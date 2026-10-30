@@ -198,3 +198,27 @@ test('dispose releases the index and rejects later calls', async () => {
     expect(error.code).toBe('ERR_TURBOVEC_DISPOSED');
   }
 });
+
+test('maps native load failures to TurbovecError', async () => {
+  let error: Error | undefined;
+  try {
+    await TurboQuantIndex.load('/definitely/not/a/turbovec/index.tv');
+  } catch (cause) {
+    error = cause instanceof Error ? cause : new Error(String(cause));
+  }
+
+  expect(error).toBeInstanceOf(TurbovecError);
+  if (error instanceof TurbovecError) {
+    expect(error.code).toBe('ERR_TURBOVEC_IO');
+  }
+});
+
+test('maps prefixed errors for non-native callers', () => {
+  const error = toTurbovecError(new Error('ERR_TURBOVEC_IO: disk failed'));
+
+  expect(error).toBeInstanceOf(TurbovecError);
+  if (error instanceof TurbovecError) {
+    expect(error.code).toBe('ERR_TURBOVEC_IO');
+    expect(error.message).toBe('disk failed');
+  }
+});

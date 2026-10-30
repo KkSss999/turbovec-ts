@@ -21,7 +21,10 @@
     "errors.js",
     "index.cjs",
     "index.d.ts",
-    "index.js"
+    "index.js",
+    "native.cjs",
+    "native.d.ts",
+    "native.js"
   ],
   "type": "module",
   "main": "./index.cjs",
@@ -41,7 +44,7 @@
   },
   "scripts": {
     "build": "bun run build:errors && bun run build:cjs && bun run build:esm",
-    "build:debug": "bun run build:errors && napi build --platform --js index.cjs",
+    "build:debug": "bun run build:errors && napi build --platform --js native.cjs --dts native.d.ts && napi build --platform --esm --js native.js --dts native.d.ts",
     "format": "oxfmt",
     "format:check": "oxfmt --check",
     "lint": "oxlint --no-error-on-unmatched-pattern",
@@ -49,8 +52,8 @@
     "typecheck": "oxlint --type-aware --type-check --no-error-on-unmatched-pattern",
     "check": "bun run format:check && bun run lint && bun run typecheck",
     "test": "bun test",
-    "build:cjs": "napi build --platform --release --js index.cjs",
-    "build:esm": "napi build --platform --release --esm --js index.js",
+    "build:cjs": "napi build --platform --release --js native.cjs --dts native.d.ts",
+    "build:esm": "napi build --platform --release --esm --js native.js --dts native.d.ts",
     "build:errors": "bun build src/errors.ts --target node --format esm --outfile errors.js && bun build src/errors.ts --target node --format cjs --outfile errors.cjs"
   },
   "devDependencies": {
