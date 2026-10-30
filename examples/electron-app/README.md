@@ -31,7 +31,11 @@ bun run smoke
 Expected output:
 
 ```text
-SMOKE_MESSAGE {"ok":true,"id":"42","length":1}
+SMOKE_RUN 1
+SMOKE_MESSAGE {"ok":true,"run":1,"id":"42","length":1}
+SMOKE_WORKER_RESTART
+SMOKE_RUN 2
+SMOKE_MESSAGE {"ok":true,"run":2,"id":"42","length":1}
 SMOKE_EXIT 0
 ```
 
@@ -44,4 +48,5 @@ unpacks `.node` files through `--asar.unpack=**/*.node`.
 - `utilityProcess` can require `turbovec-ts`
 - `IdMapIndex` adds and searches in a separate process
 - `dispose()` runs before the worker exits
-- the app exits 0 only when the result is correct
+- the first worker is killed and a second `utilityProcess` is started from the same packaged app
+- the app exits 0 only when both runs return the correct result

@@ -98,6 +98,9 @@ Locking:
 - `sync` takes the write lock: searches and mutations wait until it finishes.
 - `clear`, `dispose`, `add`, `remove`, and `swapRemove` take the write lock.
 
+A write queue would not remove that pause because the core `sync(&mut self)` needs exclusive
+access. See [`docs/sync-lock.md`](docs/sync-lock.md) for the decision and alternatives.
+
 `dispose()` releases the native index. Later calls fail with an `ERR_TURBOVEC_DISPOSED`
 message prefix. `isDisposed` reports the state.
 

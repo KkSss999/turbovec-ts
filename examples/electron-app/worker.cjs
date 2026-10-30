@@ -17,6 +17,7 @@ process.parentPort.on('message', async (event) => {
 
     process.parentPort.postMessage({
       ok: true,
+      run: event.data.run,
       id: result.ids[0].toString(),
       length: index.length,
     });
