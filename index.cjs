@@ -4,6 +4,8 @@ const {
   TurboQuantIndex: NativeTurboQuantIndex,
 } = require('./native.cjs');
 
+const MEMORY_MUTATIONS = new Set(['add', 'addWithIds', 'remove', 'swapRemove']);
+
 function wrapInstance(value, nativeClass) {
   if (!(value instanceof nativeClass)) return value;
 
@@ -24,7 +26,7 @@ function wrapInstance(value, nativeClass) {
 
       return (...args) => {
         try {
-          return wrapResult(result.apply(target, args), nativeClass);
+          return wrapResult(result.apply(target, args), nativeClass, target, property);
         } catch (error) {
           throw toTurbovecError(error);
         }
@@ -33,16 +35,25 @@ function wrapInstance(value, nativeClass) {
   });
 }
 
-function wrapResult(result, nativeClass) {
+function syncMemory(target, property) {
+  if (!MEMORY_MUTATIONS.has(property)) return;
+  target.syncExternalMemory();
+}
+
+function wrapResult(result, nativeClass, owner, property) {
   if (result && typeof result.then === 'function') {
     return result.then(
-      (value) => wrapInstance(value, nativeClass),
+      (value) => {
+        syncMemory(owner, property);
+        return wrapInstance(value, nativeClass);
+      },
       (error) => {
         throw toTurbovecError(error);
       },
     );
   }
 
+  syncMemory(owner, property);
   return wrapInstance(result, nativeClass);
 }
 
@@ -60,7 +71,9 @@ function wrapClass(nativeClass) {
     configurable: true,
     value: (data) => {
       try {
-        return wrapInstance(nativeClass.fromBytes(data), nativeClass);
+        const instance = nativeClass.fromBytes(data);
+        instance.syncExternalMemory();
+        return wrapInstance(instance, nativeClass);
       } catch (error) {
         throw toTurbovecError(error);
       }
@@ -72,7 +85,9 @@ function wrapClass(nativeClass) {
     configurable: true,
     value: async (path) => {
       try {
-        return wrapInstance(await nativeClass.load(path), nativeClass);
+        const instance = await nativeClass.load(path);
+        instance.syncExternalMemory();
+        return wrapInstance(instance, nativeClass);
       } catch (error) {
         throw toTurbovecError(error);
       }

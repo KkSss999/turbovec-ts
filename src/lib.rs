@@ -1,3 +1,4 @@
+use std::sync::atomic::{AtomicI64, Ordering};
 use std::sync::{Arc, RwLock};
 
 use napi::bindgen_prelude::*;
@@ -108,6 +109,7 @@ pub struct TurboQuantIndex {
     inner: TurboHandle,
     dim: u32,
     bit_width: u32,
+    accounted_bytes: AtomicI64,
 }
 
 #[napi]
@@ -122,6 +124,7 @@ impl TurboQuantIndex {
             inner: Arc::new(RwLock::new(Some(index))),
             dim,
             bit_width,
+            accounted_bytes: AtomicI64::new(0),
         })
     }
 
@@ -135,6 +138,7 @@ impl TurboQuantIndex {
             inner: Arc::new(RwLock::new(Some(index))),
             dim: dim as u32,
             bit_width: bit_width as u32,
+            accounted_bytes: AtomicI64::new(0),
         })
     }
 
@@ -293,10 +297,42 @@ impl TurboQuantIndex {
     }
 
     #[napi]
-    pub fn dispose(&self) -> Result<()> {
-        let mut guard = self.inner.write().map_err(|_| lock_error())?;
-        *guard = None;
+    pub fn sync_external_memory(&self, env: Env) -> Result<()> {
+        let current = {
+            let guard = self.inner.read().map_err(|_| lock_error())?;
+            let Some(index) = guard.as_ref() else {
+                return self.adjust_accounted(env, 0);
+            };
+            estimated_bytes(
+                self.dim as usize,
+                self.bit_width as usize,
+                index.len(),
+                false,
+            ) as i64
+        };
+        self.adjust_accounted(env, current)
+    }
+
+    fn adjust_accounted(&self, env: Env, current: i64) -> Result<()> {
+        let previous = self.accounted_bytes.swap(current, Ordering::Relaxed);
+        let delta = current - previous;
+        if delta == 0 {
+            return Ok(());
+        }
+        if let Err(error) = env.adjust_external_memory(delta) {
+            self.accounted_bytes.store(previous, Ordering::Relaxed);
+            return Err(native_error(error.to_string()));
+        }
         Ok(())
+    }
+
+    #[napi]
+    pub fn dispose(&self, env: Env) -> Result<()> {
+        {
+            let mut guard = self.inner.write().map_err(|_| lock_error())?;
+            *guard = None;
+        }
+        self.sync_external_memory(env)
     }
 
     #[napi(getter)]
@@ -354,6 +390,7 @@ pub struct IdMapIndex {
     inner: IdHandle,
     dim: u32,
     bit_width: u32,
+    accounted_bytes: AtomicI64,
 }
 
 #[napi]
@@ -368,6 +405,7 @@ impl IdMapIndex {
             inner: Arc::new(RwLock::new(Some(index))),
             dim,
             bit_width,
+            accounted_bytes: AtomicI64::new(0),
         })
     }
 
@@ -381,6 +419,7 @@ impl IdMapIndex {
             inner: Arc::new(RwLock::new(Some(index))),
             dim: dim as u32,
             bit_width: bit_width as u32,
+            accounted_bytes: AtomicI64::new(0),
         })
     }
 
@@ -548,10 +587,42 @@ impl IdMapIndex {
     }
 
     #[napi]
-    pub fn dispose(&self) -> Result<()> {
-        let mut guard = self.inner.write().map_err(|_| lock_error())?;
-        *guard = None;
+    pub fn sync_external_memory(&self, env: Env) -> Result<()> {
+        let current = {
+            let guard = self.inner.read().map_err(|_| lock_error())?;
+            let Some(index) = guard.as_ref() else {
+                return self.adjust_accounted(env, 0);
+            };
+            estimated_bytes(
+                self.dim as usize,
+                self.bit_width as usize,
+                index.len(),
+                true,
+            ) as i64
+        };
+        self.adjust_accounted(env, current)
+    }
+
+    fn adjust_accounted(&self, env: Env, current: i64) -> Result<()> {
+        let previous = self.accounted_bytes.swap(current, Ordering::Relaxed);
+        let delta = current - previous;
+        if delta == 0 {
+            return Ok(());
+        }
+        if let Err(error) = env.adjust_external_memory(delta) {
+            self.accounted_bytes.store(previous, Ordering::Relaxed);
+            return Err(native_error(error.to_string()));
+        }
         Ok(())
+    }
+
+    #[napi]
+    pub fn dispose(&self, env: Env) -> Result<()> {
+        {
+            let mut guard = self.inner.write().map_err(|_| lock_error())?;
+            *guard = None;
+        }
+        self.sync_external_memory(env)
     }
 
     #[napi(getter)]

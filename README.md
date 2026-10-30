@@ -95,6 +95,10 @@ message prefix. `isDisposed` reports the state.
 calibration, ids, and headers. It excludes allocator overhead, SIMD caches, and transient
 scratch buffers; use it for monitoring and guardrails, not exact accounting.
 
+After mutations the wrapper reports the estimate to V8 through
+`napi_adjust_external_memory`, so the JavaScript GC can account for the native index
+instead of seeing only the small JS handle.
+
 Native methods throw or reject with `TurbovecError` automatically:
 
 ```ts
