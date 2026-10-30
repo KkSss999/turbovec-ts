@@ -89,7 +89,11 @@ types. `IdMapIndex` uses `.tvim` files. `sync` takes the exclusive index lock, s
 wait while a sync is writing.
 
 `dispose()` releases the native index. Later calls fail with an `ERR_TURBOVEC_DISPOSED`
-message prefix.
+message prefix. `isDisposed` reports the state.
+
+`estimatedBytes` is a rough resident-size estimate for the compressed codes, scales,
+calibration, ids, and headers. It excludes allocator overhead, SIMD caches, and transient
+scratch buffers; use it for monitoring and guardrails, not exact accounting.
 
 Native methods throw or reject with `TurbovecError` automatically:
 

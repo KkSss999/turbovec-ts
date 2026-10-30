@@ -259,3 +259,16 @@ test('iterIds returns the external ids in slot order', async () => {
 
   expect(Array.from(index.iterIds())).toEqual([10n, 20n, 30n]);
 });
+
+test('reports estimated memory and disposed state', async () => {
+  const index = new TurboQuantIndex(8, 4);
+  await index.add(vectors);
+
+  expect(index.isDisposed).toBe(false);
+  expect(index.estimatedBytes).toBeGreaterThan(0);
+
+  index.dispose();
+
+  expect(index.isDisposed).toBe(true);
+  expect(index.estimatedBytes).toBe(0);
+});

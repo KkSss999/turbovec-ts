@@ -65,6 +65,23 @@ fn bigint_to_u64(value: BigInt) -> Result<u64> {
     Ok(value)
 }
 
+fn estimated_bytes(dim: usize, bit_width: usize, n: usize, with_ids: bool) -> f64 {
+    let codes_per_byte = 8 / bit_width;
+    let n_byte_groups = dim / codes_per_byte;
+    let n_blocks = n.saturating_add(31) / 32;
+    let codes = n_blocks
+        .saturating_mul(n_byte_groups)
+        .saturating_mul(32);
+    let scales = n.saturating_mul(4);
+    let calibration = dim.saturating_mul(4).saturating_mul(2);
+    let ids = if with_ids { n.saturating_mul(8) } else { 0 };
+    codes
+        .saturating_add(scales)
+        .saturating_add(calibration)
+        .saturating_add(ids)
+        .saturating_add(4096) as f64
+}
+
 type TurboCore = turbovec_core::TurboQuantIndex;
 type TurboHandle = Arc<RwLock<Option<TurboCore>>>;
 type IdCore = turbovec_core::IdMapIndex;
@@ -302,6 +319,26 @@ impl TurboQuantIndex {
     }
 
     #[napi(getter)]
+    pub fn is_disposed(&self) -> Result<bool> {
+        let guard = self.inner.read().map_err(|_| lock_error())?;
+        Ok(guard.is_none())
+    }
+
+    #[napi(getter)]
+    pub fn estimated_bytes(&self) -> Result<f64> {
+        let guard = self.inner.read().map_err(|_| lock_error())?;
+        let Some(index) = guard.as_ref() else {
+            return Ok(0.0);
+        };
+        Ok(estimated_bytes(
+            self.dim as usize,
+            self.bit_width as usize,
+            index.len(),
+            false,
+        ))
+    }
+
+    #[napi(getter)]
     pub fn dim(&self) -> u32 {
         self.dim
     }
@@ -534,6 +571,26 @@ impl IdMapIndex {
         let guard = self.inner.read().map_err(|_| lock_error())?;
         let index = guard.as_ref().ok_or_else(disposed)?;
         u32::try_from(index.len()).map_err(|_| err(ErrorCode::Native, "length exceeds u32"))
+    }
+
+    #[napi(getter)]
+    pub fn is_disposed(&self) -> Result<bool> {
+        let guard = self.inner.read().map_err(|_| lock_error())?;
+        Ok(guard.is_none())
+    }
+
+    #[napi(getter)]
+    pub fn estimated_bytes(&self) -> Result<f64> {
+        let guard = self.inner.read().map_err(|_| lock_error())?;
+        let Some(index) = guard.as_ref() else {
+            return Ok(0.0);
+        };
+        Ok(estimated_bytes(
+            self.dim as usize,
+            self.bit_width as usize,
+            index.len(),
+            true,
+        ))
     }
 
     #[napi(getter)]

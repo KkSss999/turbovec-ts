@@ -29,6 +29,8 @@ export declare class TurboQuantIndex {
   get length(): number;
   get dim(): number;
   get bitWidth(): number;
+  get isDisposed(): boolean;
+  get estimatedBytes(): number;
 }
 
 export declare class IdMapIndex {
@@ -54,4 +56,6 @@ export declare class IdMapIndex {
   get length(): number;
   get dim(): number;
   get bitWidth(): number;
+  get isDisposed(): boolean;
+  get estimatedBytes(): number;
 }
