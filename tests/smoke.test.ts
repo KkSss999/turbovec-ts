@@ -3,6 +3,7 @@ import { createRequire } from 'node:module';
 import { expect, test } from 'bun:test';
 
 import { IdMapIndex, TurboQuantIndex } from '../index.js';
+import { TurbovecError, toTurbovecError } from '../errors.js';
 
 const require = createRequire(import.meta.url);
 
@@ -185,12 +186,15 @@ test('dispose releases the index and rejects later calls', async () => {
   await index.add(vectors);
   index.dispose();
 
-  let message = '';
+  let error: Error | undefined;
   try {
     await index.search(query, 1);
-  } catch (error) {
-    message = String(error);
+  } catch (cause) {
+    error = toTurbovecError(cause);
   }
 
-  expect(message).toContain('ERR_TURBOVEC_DISPOSED');
+  expect(error).toBeInstanceOf(TurbovecError);
+  if (error instanceof TurbovecError) {
+    expect(error.code).toBe('ERR_TURBOVEC_DISPOSED');
+  }
 });

@@ -89,8 +89,21 @@ wait while a sync is writing.
 message prefix.
 
 Native errors carry a stable `ERR_TURBOVEC_*` prefix in the message (for example
-`ERR_TURBOVEC_IO`, `ERR_TURBOVEC_NATIVE`, `ERR_TURBOVEC_INVALID_INPUT`). A TypeScript
-wrapper that maps these to `error.code` is still on the roadmap.
+`ERR_TURBOVEC_IO`, `ERR_TURBOVEC_NATIVE`, `ERR_TURBOVEC_INVALID_INPUT`). Map them to a
+typed error with the helper:
+
+```ts
+import { TurbovecError, toTurbovecError } from 'turbovec-ts/errors';
+
+try {
+  await index.search(query, 10);
+} catch (cause) {
+  const error = toTurbovecError(cause);
+  if (error instanceof TurbovecError) {
+    console.log(error.code); // ERR_TURBOVEC_DISPOSED, ERR_TURBOVEC_IO, ...
+  }
+}
+```
 
 ### Python interop tests
 

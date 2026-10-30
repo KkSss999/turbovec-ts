@@ -13,12 +13,15 @@
     "url": "git+https://github.com/KkSss999/turbovec-ts.git"
   },
   "files": [
-    "index.d.ts",
-    "index.js",
-    "index.cjs",
     "*.node",
+    "LICENSE",
     "README.md",
-    "LICENSE"
+    "errors.cjs",
+    "errors.d.ts",
+    "errors.js",
+    "index.cjs",
+    "index.d.ts",
+    "index.js"
   ],
   "type": "module",
   "main": "./index.cjs",
@@ -29,11 +32,16 @@
       "types": "./index.d.ts",
       "import": "./index.js",
       "require": "./index.cjs"
+    },
+    "./errors": {
+      "types": "./errors.d.ts",
+      "import": "./errors.js",
+      "require": "./errors.cjs"
     }
   },
   "scripts": {
-    "build": "bun run build:cjs && bun run build:esm",
-    "build:debug": "napi build --platform --js index.cjs",
+    "build": "bun run build:errors && bun run build:cjs && bun run build:esm",
+    "build:debug": "bun run build:errors && napi build --platform --js index.cjs",
     "format": "oxfmt",
     "format:check": "oxfmt --check",
     "lint": "oxlint --no-error-on-unmatched-pattern",
@@ -42,7 +50,8 @@
     "check": "bun run format:check && bun run lint && bun run typecheck",
     "test": "bun test",
     "build:cjs": "napi build --platform --release --js index.cjs",
-    "build:esm": "napi build --platform --release --esm --js index.js"
+    "build:esm": "napi build --platform --release --esm --js index.js",
+    "build:errors": "bun build src/errors.ts --target node --format esm --outfile errors.js && bun build src/errors.ts --target node --format cjs --outfile errors.cjs"
   },
   "devDependencies": {
     "@napi-rs/cli": "^3.10.9",
