@@ -1,4 +1,4 @@
-import { utimes } from 'node:fs/promises';
+import { readdir, utimes } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 
 import { expect, test } from 'bun:test';
@@ -448,6 +448,62 @@ assert len(index) == 3
 `;
     const result = Bun.spawnSync([python, '-c', script, path]);
     if (result.exitCode !== 0) throw new Error(result.stderr.toString());
+  } finally {
+    await Bun.$`rm -rf ${dir.trim()}`;
+  }
+});
+
+test('concurrent checkpoints to one path leave a loadable file', async () => {
+  const dir = await Bun.$`mktemp -d`.text();
+  const path = `${dir.trim()}/index.tv`;
+  try {
+    const three = new TurboQuantIndex(8, 4);
+    await three.add(vectors);
+
+    const four = new TurboQuantIndex(8, 4);
+    await four.add(
+      new Float32Array([
+        1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0,
+        0,
+      ]),
+    );
+
+    await Promise.all([
+      three.checkpoint(path),
+      four.checkpoint(path),
+      three.checkpoint(path),
+      four.checkpoint(path),
+    ]);
+
+    const loaded = await TurboQuantIndex.load(path);
+    expect([3, 4]).toContain(loaded.length);
+
+    const entries = await readdir(dir.trim());
+    expect(entries.filter((name) => name.includes('.tmp.'))).toEqual([]);
+  } finally {
+    await Bun.$`rm -rf ${dir.trim()}`;
+  }
+});
+
+test('checkpoint cleanup uses the one-hour boundary', async () => {
+  const dir = await Bun.$`mktemp -d`.text();
+  const path = `${dir.trim()}/index.tv`;
+  const young = `${path}.tmp.1.0`;
+  const old = `${path}.tmp.1.1`;
+  try {
+    await Bun.write(young, 'young');
+    await Bun.write(old, 'old');
+
+    const now = Date.now();
+    await utimes(young, new Date(now - 59 * 60 * 1000), new Date(now - 59 * 60 * 1000));
+    await utimes(old, new Date(now - 61 * 60 * 1000), new Date(now - 61 * 60 * 1000));
+
+    const index = new TurboQuantIndex(8, 4);
+    await index.add(vectors);
+    await index.checkpoint(path);
+
+    expect(await Bun.file(young).exists()).toBe(true);
+    expect(await Bun.file(old).exists()).toBe(false);
   } finally {
     await Bun.$`rm -rf ${dir.trim()}`;
   }
