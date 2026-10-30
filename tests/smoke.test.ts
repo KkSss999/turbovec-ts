@@ -179,3 +179,18 @@ assert int(indices[0][0]) == 0
     await Bun.$`rm -rf ${dir.trim()}`;
   }
 });
+
+test('dispose releases the index and rejects later calls', async () => {
+  const index = new TurboQuantIndex(8, 4);
+  await index.add(vectors);
+  index.dispose();
+
+  let message = '';
+  try {
+    await index.search(query, 1);
+  } catch (error) {
+    message = String(error);
+  }
+
+  expect(message).toContain('ERR_TURBOVEC_DISPOSED');
+});

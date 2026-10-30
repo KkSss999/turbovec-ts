@@ -82,7 +82,15 @@ index.calibrationState; // 'uncalibrated' | 'calibrated'
 ```
 
 `sync(path)` writes only the change since the previous sync and is available on both index
-types. `IdMapIndex` uses `.tvim` files.
+types. `IdMapIndex` uses `.tvim` files. `sync` takes the exclusive index lock, so searches
+wait while a sync is writing.
+
+`dispose()` releases the native index. Later calls fail with an `ERR_TURBOVEC_DISPOSED`
+message prefix.
+
+Native errors carry a stable `ERR_TURBOVEC_*` prefix in the message (for example
+`ERR_TURBOVEC_IO`, `ERR_TURBOVEC_NATIVE`, `ERR_TURBOVEC_INVALID_INPUT`). A TypeScript
+wrapper that maps these to `error.code` is still on the roadmap.
 
 ### Python interop tests
 
