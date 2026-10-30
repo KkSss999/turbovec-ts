@@ -34,6 +34,7 @@ Use `write()` or `checkpoint()` when a full snapshot is acceptable. `checkpoint(
 under the read lock, releases it, then writes the file, so searches continue during disk I/O.
 Use `sync()` when incremental durability is required and the exclusive pause is acceptable.
 
-`checkpoint(path)` is now implemented with its own temp-file + fsync + rename writer. Revisit
-the queue idea only if profiling shows that serialization, not file I/O, is the remaining
-bottleneck.
+`checkpoint(path)` is now implemented with its own temp-file + fsync + rename writer. It
+streams the image directly to the temp file under the read lock, so it does not allocate a
+second full copy of the index. Revisit the queue idea only if profiling shows that
+serialization, not file I/O, is the remaining bottleneck.

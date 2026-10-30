@@ -1,3 +1,4 @@
+import { utimes } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 
 import { expect, test } from 'bun:test';
@@ -405,5 +406,49 @@ test('checkpoint reports io errors', async () => {
   expect(error).toBeInstanceOf(TurbovecError);
   if (error instanceof TurbovecError) {
     expect(error.code).toBe('ERR_TURBOVEC_IO');
+  }
+});
+
+test('checkpoint removes stale temp siblings and keeps fresh ones', async () => {
+  const dir = await Bun.$`mktemp -d`.text();
+  const path = `${dir.trim()}/index.tv`;
+  const stale = `${path}.tmp.123.0`;
+  const fresh = `${path}.tmp.123.1`;
+  try {
+    await Bun.write(stale, 'stale');
+    await Bun.write(fresh, 'fresh');
+    const old = new Date(Date.now() - 2 * 60 * 60 * 1000);
+    await utimes(stale, old, old);
+
+    const index = new TurboQuantIndex(8, 4);
+    await index.add(vectors);
+    await index.checkpoint(path);
+
+    expect(await Bun.file(stale).exists()).toBe(false);
+    expect(await Bun.file(fresh).exists()).toBe(true);
+  } finally {
+    await Bun.$`rm -rf ${dir.trim()}`;
+  }
+});
+
+test.skipIf(!pythonInteropAvailable())('loads a checkpoint file in Python', async () => {
+  const dir = await Bun.$`mktemp -d`.text();
+  const path = `${dir.trim()}/checkpoint.tv`;
+  try {
+    const index = new TurboQuantIndex(8, 4);
+    await index.add(vectors);
+    await index.checkpoint(path);
+
+    const script = `
+import sys
+from turbovec import TurboQuantIndex
+
+index = TurboQuantIndex.load(sys.argv[1])
+assert len(index) == 3
+`;
+    const result = Bun.spawnSync([python, '-c', script, path]);
+    if (result.exitCode !== 0) throw new Error(result.stderr.toString());
+  } finally {
+    await Bun.$`rm -rf ${dir.trim()}`;
   }
 });

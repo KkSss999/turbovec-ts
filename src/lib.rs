@@ -2,6 +2,7 @@ use std::ffi::OsString;
 use std::fs::{File, OpenOptions};
 use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::time::{Duration, SystemTime};
 use std::sync::atomic::{AtomicI64, AtomicU64, Ordering};
 use std::sync::{Arc, RwLock};
 
@@ -137,36 +138,89 @@ fn rename_checkpoint(tmp: &Path, path: &Path) -> std::io::Result<()> {
     std::fs::rename(tmp, path)
 }
 
-fn write_checkpoint(path: &Path, bytes: &[u8], durable: bool) -> std::io::Result<()> {
+fn sweep_stale_tmps(path: &Path) {
     let parent = match path.parent() {
         Some(parent) if !parent.as_os_str().is_empty() => parent,
         _ => Path::new("."),
     };
-    let (mut file, tmp) = create_checkpoint_tmp(path)?;
+    let Some(base) = path.file_name().and_then(|name| name.to_str()) else {
+        return;
+    };
+    let prefix = format!("{base}.tmp.");
+    let now = SystemTime::now();
+    let Ok(entries) = std::fs::read_dir(parent) else {
+        return;
+    };
 
-    let result = (|| {
-        file.write_all(bytes)?;
-        if durable {
-            file.sync_all()?;
+    for entry in entries.flatten() {
+        let name = entry.file_name();
+        let Some(name) = name.to_str() else { continue };
+        let Some(suffix) = name.strip_prefix(&prefix) else {
+            continue;
+        };
+        let mut parts = suffix.split('.');
+        let (Some(pid), Some(sequence), None) = (parts.next(), parts.next(), parts.next()) else {
+            continue;
+        };
+        if !pid.bytes().all(|byte| byte.is_ascii_digit())
+            || !sequence.bytes().all(|byte| byte.is_ascii_digit())
+        {
+            continue;
         }
-        drop(file);
-        rename_checkpoint(&tmp, path)?;
+        let Ok(metadata) = entry.metadata() else {
+            continue;
+        };
+        let stale = metadata.is_file()
+            && metadata
+                .modified()
+                .ok()
+                .and_then(|modified| now.duration_since(modified).ok())
+                .is_some_and(|age| age > Duration::from_secs(60 * 60));
+        if stale {
+            let _ = std::fs::remove_file(entry.path());
+        }
+    }
+}
+
+fn checkpoint_to_file<F>(path: &Path, durable: bool, write: F) -> Result<()>
+where
+    F: FnOnce(&mut File) -> Result<()>,
+{
+    sweep_stale_tmps(path);
+    let parent = match path.parent() {
+        Some(parent) if !parent.as_os_str().is_empty() => parent,
+        _ => Path::new("."),
+    };
+    let (file, tmp) = create_checkpoint_tmp(path).map_err(|e| io_error(e.to_string()))?;
+    let mut file = Some(file);
+
+    let result = (|| -> Result<()> {
+        let file = file.as_mut().expect("checkpoint file is open");
+        write(file)?;
         if durable {
-            #[cfg(unix)]
-            {
-                if let Ok(directory) = File::open(parent) {
-                    let _ = directory.sync_all();
-                }
-            }
+            file.sync_all().map_err(|e| io_error(e.to_string()))?;
         }
         Ok(())
     })();
+    drop(file.take());
 
-    if result.is_err() {
+    if let Err(error) = result {
         let _ = std::fs::remove_file(&tmp);
+        return Err(error);
     }
-    result
+
+    rename_checkpoint(&tmp, path).map_err(|e| io_error(e.to_string()))?;
+    if durable {
+        #[cfg(unix)]
+        {
+            if let Ok(directory) = File::open(parent) {
+                let _ = directory.sync_all();
+            }
+        }
+    }
+    Ok(())
 }
+
 
 fn estimated_bytes(dim: usize, bit_width: usize, n: usize, with_ids: bool) -> f64 {
     let codes_per_byte = 8 / bit_width;
@@ -400,16 +454,17 @@ impl TurboQuantIndex {
 
     #[napi]
     pub async fn checkpoint(&self, path: String, durable: Option<bool>) -> Result<()> {
-        let bytes = {
-            let guard = self.inner.read().map_err(|_| lock_error())?;
-            let index = guard.as_ref().ok_or_else(disposed)?;
-            index.to_bytes()
-        };
+        let inner = Arc::clone(&self.inner);
         let durable = durable.unwrap_or(true);
 
         napi::tokio::task::spawn_blocking(move || -> Result<()> {
-            write_checkpoint(Path::new(&path), &bytes, durable)
-                .map_err(|e| io_error(e.to_string()))
+            checkpoint_to_file(Path::new(&path), durable, |file| {
+                let guard = inner.read().map_err(|_| lock_error())?;
+                let index = guard.as_ref().ok_or_else(disposed)?;
+                index
+                    .write_to_writer(file)
+                    .map_err(|e| io_error(e.to_string()))
+            })
         })
         .await
         .map_err(task_error)?
@@ -724,16 +779,17 @@ impl IdMapIndex {
 
     #[napi]
     pub async fn checkpoint(&self, path: String, durable: Option<bool>) -> Result<()> {
-        let bytes = {
-            let guard = self.inner.read().map_err(|_| lock_error())?;
-            let index = guard.as_ref().ok_or_else(disposed)?;
-            index.to_bytes()
-        };
+        let inner = Arc::clone(&self.inner);
         let durable = durable.unwrap_or(true);
 
         napi::tokio::task::spawn_blocking(move || -> Result<()> {
-            write_checkpoint(Path::new(&path), &bytes, durable)
-                .map_err(|e| io_error(e.to_string()))
+            checkpoint_to_file(Path::new(&path), durable, |file| {
+                let guard = inner.read().map_err(|_| lock_error())?;
+                let index = guard.as_ref().ok_or_else(disposed)?;
+                index
+                    .write_to_writer(file)
+                    .map_err(|e| io_error(e.to_string()))
+            })
         })
         .await
         .map_err(task_error)?
