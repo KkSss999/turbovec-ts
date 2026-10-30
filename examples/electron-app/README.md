@@ -36,6 +36,9 @@ SMOKE_MESSAGE {"ok":true,"run":1,"id":"42","length":1}
 SMOKE_WORKER_RESTART
 SMOKE_RUN 2
 SMOKE_MESSAGE {"ok":true,"run":2,"id":"42","length":1}
+SMOKE_RENDERER_1 {"id":"42","length":1}
+SMOKE_RENDERER_2 {"id":"42","length":1}
+SMOKE_DISPOSE {"ok":true,"requestId":3}
 SMOKE_EXIT 0
 ```
 
@@ -49,4 +52,6 @@ unpacks `.node` files through `--asar.unpack=**/*.node`.
 - `IdMapIndex` adds and searches in a separate process
 - `dispose()` runs before the worker exits
 - the first worker is killed and a second `utilityProcess` is started from the same packaged app
-- the app exits 0 only when both runs return the correct result
+- a hidden `BrowserWindow` searches through preload/IPC, reloads, and searches again
+- the worker is disposed through the message protocol
+- the app exits 0 only when every step returns the correct result

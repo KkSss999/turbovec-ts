@@ -1,10 +1,13 @@
 // oxlint-disable unicorn/require-post-message-target-origin
 const path = require('node:path');
-const { app, utilityProcess } = require('electron');
+const { app, BrowserWindow, ipcMain, utilityProcess } = require('electron');
 
 let finished = false;
 let run = 0;
 let restarting = false;
+let requestId = 0;
+let worker = null;
+const pending = new Map();
 
 function finish(code) {
   if (finished) return;
@@ -13,13 +16,47 @@ function finish(code) {
   app.exit(code);
 }
 
+function requestWorker(message) {
+  return new Promise((resolve, reject) => {
+    if (!worker) {
+      reject(new Error('worker is not running'));
+      return;
+    }
+    requestId += 1;
+    const id = requestId;
+    const timeout = setTimeout(() => {
+      pending.delete(id);
+      reject(new Error(`worker request ${id} timed out`));
+    }, 5000);
+    pending.set(id, {
+      resolve: (value) => {
+        clearTimeout(timeout);
+        resolve(value);
+      },
+      reject: (error) => {
+        clearTimeout(timeout);
+        reject(error);
+      },
+    });
+    worker.postMessage({ id, ...message });
+  });
+}
+
 function spawnWorker() {
   run += 1;
   console.log(`SMOKE_RUN ${run}`);
-  const worker = utilityProcess.fork(path.join(__dirname, 'worker.cjs'));
+  worker = utilityProcess.fork(path.join(__dirname, 'worker.cjs'));
 
   worker.on('spawn', () => worker.postMessage({ type: 'run', run }));
   worker.on('message', (message) => {
+    if (message && message.requestId && pending.has(message.requestId)) {
+      const request = pending.get(message.requestId);
+      pending.delete(message.requestId);
+      if (message.ok) request.resolve(message);
+      else request.reject(new Error(message.error ?? 'worker request failed'));
+      return;
+    }
+
     console.log(`SMOKE_MESSAGE ${JSON.stringify(message)}`);
     if (!message || !message.ok) {
       finish(1);
@@ -33,7 +70,7 @@ function spawnWorker() {
       return;
     }
 
-    finish(0);
+    void testRendererReload();
   });
   worker.on('error', (error) => {
     console.error('worker error', error);
@@ -52,6 +89,46 @@ function spawnWorker() {
   });
 }
 
+async function testRendererReload() {
+  const window = new BrowserWindow({
+    show: false,
+    webPreferences: {
+      contextIsolation: true,
+      preload: path.join(__dirname, 'preload.cjs'),
+      sandbox: false,
+    },
+  });
+
+  await window.loadFile(path.join(__dirname, 'renderer.html'));
+
+  const first = await window.webContents.executeJavaScript('window.smoke.search()');
+  console.log(`SMOKE_RENDERER_1 ${JSON.stringify(first)}`);
+  if (!first || first.id !== '42') {
+    throw new Error('first renderer search failed');
+  }
+
+  await new Promise((resolve) => {
+    window.webContents.once('did-finish-load', resolve);
+    window.webContents.reload();
+  });
+
+  const second = await window.webContents.executeJavaScript('window.smoke.search()');
+  console.log(`SMOKE_RENDERER_2 ${JSON.stringify(second)}`);
+  if (!second || second.id !== '42') {
+    throw new Error('second renderer search failed');
+  }
+
+  window.destroy();
+  const disposed = await requestWorker({ type: 'dispose' });
+  console.log(`SMOKE_DISPOSE ${JSON.stringify(disposed)}`);
+  finish(0);
+}
+
+ipcMain.handle('smoke:search', async () => {
+  const result = await requestWorker({ type: 'search' });
+  return { id: result.id, length: result.length };
+});
+
 (async () => {
   await app.whenReady();
   spawnWorker();
@@ -63,6 +140,6 @@ function spawnWorker() {
 setTimeout(() => {
   console.error('smoke timeout');
   finish(1);
-}, 20_000);
+}, 30_000);
 
 app.on('window-all-closed', () => app.quit());
