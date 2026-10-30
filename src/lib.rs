@@ -1,5 +1,8 @@
+use std::ffi::OsString;
+use std::fs::{File, OpenOptions};
 use std::io::Write;
-use std::sync::atomic::{AtomicI64, Ordering};
+use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicI64, AtomicU64, Ordering};
 use std::sync::{Arc, RwLock};
 
 use napi::bindgen_prelude::*;
@@ -81,6 +84,88 @@ impl Write for CountingWriter {
     fn flush(&mut self) -> std::io::Result<()> {
         Ok(())
     }
+}
+
+static TMP_SEQ: AtomicU64 = AtomicU64::new(0);
+
+fn create_checkpoint_tmp(path: &Path) -> std::io::Result<(File, PathBuf)> {
+    let parent = match path.parent() {
+        Some(parent) if !parent.as_os_str().is_empty() => parent,
+        _ => Path::new("."),
+    };
+    let name = path.file_name().ok_or_else(|| {
+        std::io::Error::new(std::io::ErrorKind::InvalidInput, "path has no file name")
+    })?;
+
+    let mut last_error = None;
+    for _ in 0..8 {
+        let sequence = TMP_SEQ.fetch_add(1, Ordering::Relaxed);
+        let mut tmp_name = OsString::from(name);
+        tmp_name.push(format!(".tmp.{}.{sequence}", std::process::id()));
+        let tmp = parent.join(tmp_name);
+        match OpenOptions::new().write(true).create_new(true).open(&tmp) {
+            Ok(file) => return Ok((file, tmp)),
+            Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
+                last_error = Some(error);
+            }
+            Err(error) => return Err(error),
+        }
+    }
+
+    Err(last_error.unwrap_or_else(|| {
+        std::io::Error::new(std::io::ErrorKind::AlreadyExists, "could not create temp file")
+    }))
+}
+
+#[cfg(windows)]
+fn rename_checkpoint(tmp: &Path, path: &Path) -> std::io::Result<()> {
+    let mut delay_ms = 1u64;
+    for _ in 0..10 {
+        match std::fs::rename(tmp, path) {
+            Err(error) if matches!(error.raw_os_error(), Some(5) | Some(32)) => {
+                std::thread::sleep(std::time::Duration::from_millis(delay_ms));
+                delay_ms = (delay_ms * 2).min(64);
+            }
+            result => return result,
+        }
+    }
+    std::fs::rename(tmp, path)
+}
+
+#[cfg(not(windows))]
+fn rename_checkpoint(tmp: &Path, path: &Path) -> std::io::Result<()> {
+    std::fs::rename(tmp, path)
+}
+
+fn write_checkpoint(path: &Path, bytes: &[u8], durable: bool) -> std::io::Result<()> {
+    let parent = match path.parent() {
+        Some(parent) if !parent.as_os_str().is_empty() => parent,
+        _ => Path::new("."),
+    };
+    let (mut file, tmp) = create_checkpoint_tmp(path)?;
+
+    let result = (|| {
+        file.write_all(bytes)?;
+        if durable {
+            file.sync_all()?;
+        }
+        drop(file);
+        rename_checkpoint(&tmp, path)?;
+        if durable {
+            #[cfg(unix)]
+            {
+                if let Ok(directory) = File::open(parent) {
+                    let _ = directory.sync_all();
+                }
+            }
+        }
+        Ok(())
+    })();
+
+    if result.is_err() {
+        let _ = std::fs::remove_file(&tmp);
+    }
+    result
 }
 
 fn estimated_bytes(dim: usize, bit_width: usize, n: usize, with_ids: bool) -> f64 {
@@ -308,6 +393,23 @@ impl TurboQuantIndex {
             let index = guard.as_ref().ok_or_else(disposed)?;
             index.prepare();
             Ok(())
+        })
+        .await
+        .map_err(task_error)?
+    }
+
+    #[napi]
+    pub async fn checkpoint(&self, path: String, durable: Option<bool>) -> Result<()> {
+        let bytes = {
+            let guard = self.inner.read().map_err(|_| lock_error())?;
+            let index = guard.as_ref().ok_or_else(disposed)?;
+            index.to_bytes()
+        };
+        let durable = durable.unwrap_or(true);
+
+        napi::tokio::task::spawn_blocking(move || -> Result<()> {
+            write_checkpoint(Path::new(&path), &bytes, durable)
+                .map_err(|e| io_error(e.to_string()))
         })
         .await
         .map_err(task_error)?
@@ -615,6 +717,23 @@ impl IdMapIndex {
             let index = guard.as_ref().ok_or_else(disposed)?;
             index.prepare();
             Ok(())
+        })
+        .await
+        .map_err(task_error)?
+    }
+
+    #[napi]
+    pub async fn checkpoint(&self, path: String, durable: Option<bool>) -> Result<()> {
+        let bytes = {
+            let guard = self.inner.read().map_err(|_| lock_error())?;
+            let index = guard.as_ref().ok_or_else(disposed)?;
+            index.to_bytes()
+        };
+        let durable = durable.unwrap_or(true);
+
+        napi::tokio::task::spawn_blocking(move || -> Result<()> {
+            write_checkpoint(Path::new(&path), &bytes, durable)
+                .map_err(|e| io_error(e.to_string()))
         })
         .await
         .map_err(task_error)?

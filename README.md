@@ -92,9 +92,13 @@ index.calibrationState; // 'uncalibrated' | 'calibrated'
 `sync(path)` writes only the change since the previous sync and is available on both index
 types. `IdMapIndex` uses `.tvim` files.
 
+`checkpoint(path)` writes a full snapshot: it serializes under the read lock, releases it,
+then writes the file. Searches continue during the disk write; mutations wait while the
+snapshot is being built. It is not incremental and does not bind the index to the path.
+
 Locking:
 
-- `write` takes the read lock: searches continue, mutations wait.
+- `write` and `checkpoint` take the read lock: searches continue, mutations wait.
 - `sync` takes the write lock: searches and mutations wait until it finishes.
 - `clear`, `dispose`, `add`, `remove`, and `swapRemove` take the write lock.
 

@@ -30,9 +30,10 @@ mutable access for the whole call. The binding wraps the core index in
 Keep `sync()` exclusive. A write queue only changes which writer waits, not whether searches
 block, so it adds machinery without solving the user-visible pause.
 
-Use `write()` when a full snapshot is acceptable: it takes the read lock, so searches continue
-while the snapshot is written, but mutations wait. Use `sync()` when incremental durability is
-required and the exclusive pause is acceptable.
+Use `write()` or `checkpoint()` when a full snapshot is acceptable. `checkpoint()` serializes
+under the read lock, releases it, then writes the file, so searches continue during disk I/O.
+Use `sync()` when incremental durability is required and the exclusive pause is acceptable.
 
-Revisit this if profiling shows sync pauses matter in a real workload. The likely next step is a
-snapshot-based `checkpoint(path)` with its own durable file writer, not a queue.
+`checkpoint(path)` is now implemented with its own temp-file + fsync + rename writer. Revisit
+the queue idea only if profiling shows that serialization, not file I/O, is the remaining
+bottleneck.

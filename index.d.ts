@@ -23,6 +23,7 @@ export declare class TurboQuantIndex {
   static fromBytes(data: Buffer): TurboQuantIndex;
   static load(path: string): Promise<TurboQuantIndex>;
   write(path: string, durable?: boolean | null): Promise<void>;
+  checkpoint(path: string, durable?: boolean | null): Promise<void>;
   sync(path: string): Promise<void>;
   calibrate(sample: Float32Array): Promise<void>;
   prepare(): Promise<void>;
@@ -52,6 +53,7 @@ export declare class IdMapIndex {
   static fromBytes(data: Buffer): IdMapIndex;
   static load(path: string): Promise<IdMapIndex>;
   write(path: string, durable?: boolean | null): Promise<void>;
+  checkpoint(path: string, durable?: boolean | null): Promise<void>;
   sync(path: string): Promise<void>;
   calibrate(sample: Float32Array): Promise<void>;
   prepare(): Promise<void>;

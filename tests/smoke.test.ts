@@ -358,3 +358,52 @@ test('clear racing an add does not deadlock', async () => {
   expect(index.isDisposed).toBe(false);
   expect(index.length).toBeGreaterThanOrEqual(0);
 });
+
+test('checkpoint writes a loadable full snapshot', async () => {
+  const dir = await Bun.$`mktemp -d`.text();
+  const path = `${dir.trim()}/checkpoint.tv`;
+  try {
+    const index = new TurboQuantIndex(8, 4);
+    await index.add(vectors);
+    await index.checkpoint(path);
+
+    const loaded = await TurboQuantIndex.load(path);
+    expect(loaded.length).toBe(3);
+  } finally {
+    await Bun.$`rm -rf ${dir.trim()}`;
+  }
+});
+
+test('checkpoint works for an id map and concurrent search', async () => {
+  const dir = await Bun.$`mktemp -d`.text();
+  const path = `${dir.trim()}/checkpoint.tvim`;
+  try {
+    const index = new IdMapIndex(8, 4);
+    await index.addWithIds(vectors, new BigUint64Array([10n, 20n, 30n]));
+
+    const [result] = await Promise.all([index.search(query, 1), index.checkpoint(path)]);
+
+    expect(result.ids[0]).toBe(10n);
+    const loaded = await IdMapIndex.load(path);
+    expect(loaded.length).toBe(3);
+  } finally {
+    await Bun.$`rm -rf ${dir.trim()}`;
+  }
+});
+
+test('checkpoint reports io errors', async () => {
+  const index = new TurboQuantIndex(8, 4);
+  await index.add(vectors);
+
+  let error: Error | undefined;
+  try {
+    await index.checkpoint('/definitely/not/a/turbovec/dir/index.tv');
+  } catch (cause) {
+    error = cause instanceof Error ? cause : new Error(String(cause));
+  }
+
+  expect(error).toBeInstanceOf(TurbovecError);
+  if (error instanceof TurbovecError) {
+    expect(error.code).toBe('ERR_TURBOVEC_IO');
+  }
+});
