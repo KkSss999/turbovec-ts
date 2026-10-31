@@ -21,18 +21,16 @@ powershell.exe -NoProfile -Command 'cargo --version; rustc -vV'
 
 ## Copy the repository to a Windows drive
 
-The core is a sibling path dependency, so preserve the layout:
+The core comes from crates.io, so only this repository is needed:
 
 ```text
-G:\RustTemp\turbovec\turbovec
 G:\RustTemp\turbovec-node
 ```
 
 From WSL:
 
 ```bash
-rm -rf /mnt/g/RustTemp/turbovec /mnt/g/RustTemp/turbovec-node
-rsync -a --exclude target --exclude .git /home/kerye/turbovec/ /mnt/g/RustTemp/turbovec/
+rm -rf /mnt/g/RustTemp/turbovec-node
 rsync -a --exclude target --exclude .git /home/kerye/turbovec-node/ /mnt/g/RustTemp/turbovec-node/
 ```
 
