@@ -1,0 +1,52 @@
+{
+  "name": "turbovec-ts",
+  "version": "0.3.0",
+  "private": true,
+  "description": "Node.js API for turbovec, backed by a bundled Rust sidecar",
+  "license": "MIT",
+  "type": "module",
+  "main": "./index.cjs",
+  "module": "./index.js",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./index.js",
+      "require": "./index.cjs"
+    }
+  },
+  "files": [
+    "bin/",
+    "lib/",
+    "index.cjs",
+    "index.js",
+    "index.d.ts",
+    "LICENSE",
+    "LICENSE-TURBOVEC",
+    "README.md",
+    "docs/"
+  ],
+  "engines": {
+    "node": ">=20.17"
+  },
+  "scripts": {
+    "test": "bun test"
+  },
+  "homepage": "https://github.com/KkSss999/turbovec-ts",
+  "bugs": {
+    "url": "https://github.com/KkSss999/turbovec-ts/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KkSss999/turbovec-ts.git"
+  },
+  "keywords": [
+    "vector",
+    "vector-search",
+    "quantization",
+    "ann",
+    "turbovec",
+    "napi",
+    "rust"
+  ]
+}

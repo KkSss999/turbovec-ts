@@ -2,63 +2,95 @@
 
 ## Decision
 
-The runtime is Rust, and this repository is a **service-layer library**. It is not a daemon and
-does not define a wire protocol.
+The package is a JS/TS API backed by a bundled Rust sidecar.
 
 ```text
-domain   upstream turbovec core
-service  turbovec-service: lifecycle, locking, validation, persistence, stats
-api      public Rust API
-server   consumer: HTTP / gRPC / CLI / IPC, auth, tenancy, queues
+consumer application
+  │
+  ├── JS/TS import
+  ▼
+turbovec-ts package
+  ├── platform sidecar binary
+  ├── spawn / ready / restart / shutdown
+  ├── framed stdio transport
+  ├── request queue
+  └── error mapping
+        │
+        ▼
+turbovecd (Rust process)
+  └── turbovec-service
+        └── turbovec core
 ```
 
-Consumers embed the service in their own process, or wrap it in a server they own. This keeps the
-runtime with Rust without forcing a transport or a sidecar on every consumer.
+## Why B1
 
-## Why not an IPC service
+The product requirement is:
 
-The earlier B proposal put the index in a Rust sidecar and connected Node or other clients over
-a local socket. That added:
+```ts
+import { TurboQuantIndex } from 'turbovec-ts';
+```
 
-- a second process and lifecycle
-- IPC framing, copying, and versioning
-- sidecar packaging, signing, and notarization
-- transport-specific error, timeout, and backpressure behavior
+with no Rust toolchain, no native compilation, and no consumer-written adapter.
 
-Those are application concerns. The benchmark showed the Rust core is fast in-process; the
-remaining Node costs were runtime memory and admission control, not a reason to require IPC for
-every deployment.
+B1 keeps the index/search runtime in a real Rust process while the npm package owns the
+lifecycle and private transport. Consumers can still put HTTP/gRPC/MCP/CLI layers around the
+imported API, but they do not have to implement the turbovec boundary.
 
-## Relationship to the Python SDK
+## Ownership
 
-The upstream Python SDK uses PyO3 as an in-process native extension. Python owns the process and
-the API; Rust owns index/search kernels. This crate follows the same layering idea: a language
-surface over the Rust domain, with no separate service required.
+| Concern | Owner |
+|---|---|
+| JS/TS API | this package |
+| sidecar binary | this package |
+| sidecar lifecycle | this package |
+| sidecar protocol | this package, private |
+| index/search runtime | Rust sidecar |
+| HTTP/gRPC/MCP/server | consumer |
+| auth, tenancy, business routing | consumer |
+| id mapping for application records | consumer |
 
-The difference is that this crate's public surface is Rust. A consumer that needs a Python,
-Node, HTTP, or IPC surface should build that adapter around this API.
+## Transport
+
+The sidecar uses framed stdio:
+
+```text
+u32 header length
+JSON control header
+raw payload bytes
+```
+
+Vectors and results are raw little-endian typed-array bytes. The transport is private and may
+change with the package version. It is not a public API.
 
 ## Concurrency
 
-`Service` uses an internal read/write lock:
+The sidecar processes requests sequentially and uses Rust rayon inside search. The JS client
+keeps a pending-request map and can pipeline requests, but the sidecar remains the single index
+owner. Consumers that need admission control should add it in their application around the
+package API.
 
-- search: read lock, concurrent searches allowed
-- add/remove/calibrate/sync/close: write lock
-- write/checkpoint: read lock, full snapshot without a second in-memory image
+## Platform policy
 
-There is no internal queue. A consumer that needs bounded concurrency must implement it around
-the service.
+Supported by bundled binaries:
 
-## Persistence
+```text
+linux-x64
+win32-x64
+```
 
-`write`/`checkpoint` produce a full snapshot; `sync` incrementally persists a single-writer
-destination. The core owns the on-disk format. One writer per path is the contract.
+Pending:
 
-## Non-goals
+```text
+darwin-arm64
+```
 
-- no listener or daemon
-- no IPC protocol
-- no built-in global semaphore
-- no authentication, tenancy, or routing
-- no claim that the host process is Rust; the service library is Rust, the host is whatever
-  embeds it
+Explicitly unsupported:
+
+```text
+linux-arm64
+win32-arm64
+darwin-x64
+linux-musl
+```
+
+Compilation on another target is not a support claim.

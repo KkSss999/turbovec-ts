@@ -4,6 +4,27 @@ All notable changes to `turbovec-service` are documented here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.3.0] - 2026-10-31
+
+Pre-release. Not published.
+
+### Changed
+
+- Product shape is now B1: JS/TS package with a bundled Rust sidecar. Consumers install and
+  import the package; they do not need Rust or a consumer-written IPC adapter.
+- The sidecar transport is package-private and framed over stdio.
+
+### Added
+
+- `turbovecd` sidecar and the `turbovec-ts` JS client.
+- Dense and id-map add/search, masks/allowlists, snapshots, sync, calibration, stats, close, and
+  load.
+- Bundled Linux x64 and Windows x64 sidecar binaries.
+
+### Removed
+
+- B2 consumer-side adapter examples and pmem integration instructions.
+
 ## [0.2.0] - 2026-10-31
 
 Pre-release. Not published.

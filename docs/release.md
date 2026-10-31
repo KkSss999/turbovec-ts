@@ -1,7 +1,7 @@
 # Release process
 
-The crate is not published. `Cargo.toml` keeps `publish = false` until an explicit release
-decision.
+The package is not published. `package.json` keeps `"private": true` and `Cargo.toml` keeps
+`publish = false` until an explicit release decision.
 
 ## Preflight
 
@@ -10,26 +10,57 @@ cargo fmt --check
 cargo clippy --all-targets -- -D warnings
 cargo test
 cargo doc --no-deps
+bun test
 ```
 
-Update `CHANGELOG.md`, `README.md`, and the version in `Cargo.toml` before tagging.
+## Sidecar binaries
 
-## Versioning
+Build and stage the platform binaries before packing:
 
-- `0.2.0` is the first service-layer pre-release.
-- The archived N-API implementation is the git tag `archive/napi-0.1.1`; do not reuse its
-  version or package name.
-- The crate depends on the crates.io `turbovec = "1.1.2"` package, not a sibling path. A future
-  crates.io release only requires changing `publish = false` and following the normal publish
-  approval; do not publish implicitly.
+```bash
+cargo build --release --bin turbovecd
+cp target/release/turbovecd bin/linux-x64/turbovecd
+```
 
-## Release artifact
+On Windows:
 
-A release is currently a git tag plus source. The crate can be consumed as a path or git
-dependency. A crates.io package is a separate decision because it changes the core dependency
-from a path to a registry version.
+```powershell
+cargo build --release --bin turbovecd
+Copy-Item target\release\turbovecd.exe bin\win32-x64\turbovecd.exe
+```
 
-## Cutover rule
+The package must contain:
 
-Do not add a server, daemon, or IPC layer to make a release possible. Consumers own transport.
-The service library's release boundary is the Rust API and its tests.
+```text
+bin/linux-x64/turbovecd
+bin/win32-x64/turbovecd.exe
+```
+
+macOS arm64 is not staged until a real target binary and smoke test exist. Do not ship a
+placeholder.
+
+## Package smoke
+
+```bash
+bun pm pack --filename turbovec-ts-0.3.0.tgz
+mkdir -p /tmp/turbovec-ts-install && cd /tmp/turbovec-ts-install
+printf '{"name":"tv-install","private":true}\n' > package.json
+bun add /absolute/path/to/turbovec-ts-0.3.0.tgz
+node --input-type=module -e "import { TurboQuantIndex } from 'turbovec-ts'; const i=new TurboQuantIndex(8,4); await i.add(new Float32Array([1,0,0,0,0,0,0,0])); console.log((await i.search(new Float32Array([1,0,0,0,0,0,0,0]),1)).indices); await i.close();"
+```
+
+The smoke must pass without invoking Rust. The package contains prebuilt sidecars; no install
+script compiles anything.
+
+## Publish
+
+Only after approval:
+
+1. Remove `"private": true`.
+2. Bump the package and Cargo versions together.
+3. Rebuild both platform sidecars from the same commit.
+4. Pack and run the tarball smoke.
+5. Publish with `bun publish`.
+6. Tag the exact commit.
+
+Do not add a server or consumer adapter to make a release possible.

@@ -3,7 +3,9 @@
 ## Requirements
 
 - Rust 1.89+
-- Network access for the crates.io `turbovec = "1.1.2"` dependency
+- Bun
+- Node.js 20.17+ for the packaged client
+- Windows only for Windows-specific sidecar tests
 
 ## Checks
 
@@ -12,27 +14,24 @@ cargo fmt --check
 cargo clippy --all-targets -- -D warnings
 cargo test
 cargo doc --no-deps
+bun test
 ```
 
-## Scope
+## Architecture boundary
 
-This crate is a library. Do not add a network listener, daemon, IPC server, auth layer, or global
-queue. Consumers own transports and admission control. Keep the service API independent of any
-specific server.
-
-## Windows from WSL2
-
-See [`docs/windows-testing.md`](docs/windows-testing.md) for running the native Windows test
-suite through WSL interop.
+- The package owns the JS client, sidecar lifecycle, and private framed stdio protocol.
+- Consumers own HTTP/gRPC/MCP/CLI/server layers and their own wire protocols.
+- Do not add a public server or consumer adapter to the package.
+- Do not add an install script that compiles Rust on a consumer machine.
 
 ## Tests
 
 - New behavior needs a test that fails without the change.
-- Cover both `IndexKind` variants when a change affects shared code.
-- Test malformed lengths, closed services, persistence failures, and concurrency where relevant.
-- Do not claim platform support from compilation alone; run the integration tests on the target.
+- Cover both dense and id-map clients.
+- Test sidecar startup, shutdown, error mapping, and persisted load.
+- Platform support requires a real target binary and smoke test; compilation alone is not enough.
 
-## Changes
+## Release
 
-Keep changes focused. Add user-visible changes to `CHANGELOG.md` and update the API stability
-notes. Do not publish to crates.io without explicit maintainer approval.
+Do not publish until `private: true` and `publish = false` are explicitly changed. See
+[`docs/release.md`](docs/release.md).

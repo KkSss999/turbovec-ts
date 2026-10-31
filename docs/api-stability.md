@@ -2,43 +2,44 @@
 
 ## Public surface
 
-The public surface is the API exported from `turbovec_service`:
+The public API is the JavaScript/TypeScript package:
 
-- `Service`, `Config`, `IndexKind`
-- `SearchResult`, `Stats`
-- `ServiceError`, `ErrorCode`
-- `Durability`
-- re-exported `SearchResults` and `IdSearchResults`
+- `TurboQuantIndex`
+- `IdMapIndex`
+- `TurbovecError`, `toTurbovecError`
+- the result and stats types in `index.d.ts`
 
-Anything in `src/` that is not re-exported is internal.
+The sidecar binary, framed stdio protocol, request ids, payload layout, and sidecar process
+management are implementation details. They may change between package versions without a
+public API break.
 
 ## Version policy
 
-`0.2.x` is a pre-release line. Until `1.0`:
+`0.3.x` is a pre-release line.
 
-- patch releases should not break the public API
+- patch releases should not break the JS API
 - additions are allowed
-- a breaking change requires a minor bump and a changelog entry
-- `1.0` freezes the API under normal Semantic Versioning rules
+- a breaking API change requires a minor bump and a changelog entry
+- `1.0` freezes the public API under normal Semantic Versioning rules
 
-Deprecations should be documented in the changelog and kept for at least one minor release when
-practical.
+## Method semantics
 
-## Semantics
-
-- `ErrorCode` categories are part of the contract.
-- One writer per persistence path is required.
-- `Service::close` makes later operations return `Disposed`.
-- Search locks are implementation details; concurrent searches are supported, but the precise
-  lock is not API.
-- The on-disk format belongs to the upstream core.
-
-## Transport boundary
-
-This crate will not add a network or IPC API. A consumer may build one, but it is a separate
-contract with its own versioning.
+- Index operations are asynchronous because they cross the sidecar process boundary.
+- `close`/`dispose` stop the sidecar. Later calls fail.
+- Search results are typed arrays: dense returns `indices: number[]`; id-map returns
+  `ids: BigUint64Array`.
+- One index instance owns one sidecar process and one persisted index.
+- The package owns sidecar lifecycle. Consumers own their own HTTP/gRPC/MCP/server layers.
 
 ## Platform claims
 
-Compilation is not support. Run the integration tests on the target before documenting a
-platform as supported.
+Supported binaries:
+
+```text
+linux-x64
+win32-x64
+```
+
+Pending: `darwin-arm64`.
+
+Explicitly unsupported: Linux arm64, Windows arm64, macOS x64, Linux musl.

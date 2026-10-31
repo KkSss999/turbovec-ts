@@ -1,73 +1,59 @@
 # Windows x64 testing from WSL2
 
-WSL2 can drive the Windows Rust toolchain through interop. The Windows build must run from a
-Windows filesystem path; `cargo` and the MSVC linker do not handle a UNC current directory
-(`\\wsl.localhost\...`) reliably.
+WSL2 can drive the Windows Rust and Node toolchains through interop. Build and run from a Windows
+filesystem path; do not use a UNC path as the current directory.
 
-## Prerequisites
-
-On Windows:
-
-- Rust MSVC toolchain (`x86_64-pc-windows-msvc`)
-- Visual Studio Build Tools with the MSVC linker and Windows SDK
-- `cargo.exe` available in Windows `PATH`
+## Setup
 
 Verify from WSL:
 
 ```bash
 cmd.exe /c ver
-powershell.exe -NoProfile -Command 'cargo --version; rustc -vV'
+powershell.exe -NoProfile -Command 'cargo --version; node --version'
 ```
 
-## Copy the repository to a Windows drive
+On Windows, Rust MSVC and Visual Studio Build Tools must be installed for building the sidecar.
+Consumers of the npm package do not need either.
 
-The core comes from crates.io, so only this repository is needed:
-
-```text
-G:\RustTemp\turbovec-node
-```
-
-From WSL:
+## Sync source to Windows
 
 ```bash
 rm -rf /mnt/g/RustTemp/turbovec-node
 rsync -a --exclude target --exclude .git /home/kerye/turbovec-node/ /mnt/g/RustTemp/turbovec-node/
 ```
 
-## Run the tests
+## Build sidecar
 
 ```bash
-powershell.exe -NoProfile -Command "Set-Location 'G:\RustTemp\turbovec-node'; cargo test --locked"
+powershell.exe -NoProfile -Command "Set-Location 'G:\RustTemp\turbovec-node'; cargo build --release --bin turbovecd"
 ```
 
-Expected result: the service integration suite passes on Windows x64. The tests cover dense and
-id-map indexes, persistence, malformed input, close semantics, and concurrent searches.
-
-Consumer examples:
+Copy the result into the package tree:
 
 ```bash
-powershell.exe -NoProfile -Command "Set-Location 'G:\RustTemp\turbovec-node'; cargo run --manifest-path consumers/cli/Cargo.toml"
-powershell.exe -NoProfile -Command "Set-Location 'G:\RustTemp\turbovec-node'; cargo run --manifest-path consumers/http-server/Cargo.toml"
-powershell.exe -NoProfile -Command "Set-Location 'G:\RustTemp\turbovec-node'; cargo run --manifest-path consumers/ipc/Cargo.toml -- server"
+cp /mnt/g/RustTemp/turbovec-node/target/release/turbovecd.exe \
+   /home/kerye/turbovec-node/bin/win32-x64/turbovecd.exe
 ```
 
-The IPC example uses `interprocess` local sockets: Unix domain sockets on Unix and named pipes on
-Windows. Its server/client smoke test passes on Windows x64.
+## Run tests and package client
+
+```bash
+powershell.exe -NoProfile -Command "Set-Location 'G:\RustTemp\turbovec-node'; cargo test --locked --all-targets"
+```
+
+Client smoke on Windows:
+
+```bash
+powershell.exe -NoProfile -Command "Set-Location 'G:\RustTemp\turbovec-node'; node -e \"const { TurboQuantIndex } = require('./index.cjs'); (async()=>{ const i=new TurboQuantIndex(8,4); await i.add(new Float32Array([1,0,0,0,0,0,0,0])); const r=await i.search(new Float32Array([1,0,0,0,0,0,0,0]),1); console.log(r.indices); await i.close(); })().catch(e=>{console.error(e); process.exit(1)})\""
+```
 
 ## Verified
 
 On 2026-10-31 on Windows x64:
 
-- `cargo test --locked --all-targets`: 11 integration tests passed
+- Rust sidecar test suite: 11 integration tests passed
 - `cargo clippy --all-targets -- -D warnings`: clean
-- CLI example: passed
-- HTTP example: `/search` returned the expected top-2
-- IPC example: named-pipe server/client returned the expected top-2
-- pmem sidecar example: JSON-lines add/search/stats returned the expected ids and scores
+- packaged JS client: sidecar spawn, add, search, close passed
+- package tarball: Linux x64 installed and imported with no Rust invocation
 
-## Notes
-
-- Re-copy the source after changing the WSL checkout.
-- Do not use `\\wsl.localhost\...` as the current directory for Windows `cargo`.
-- Build output remains under `G:\RustTemp\turbovec-node\target`; it is not committed.
-- This is a real Windows-native test, not a cross-compile check.
+The package does not ship a Windows arm64 binary.

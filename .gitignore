@@ -7,3 +7,4 @@ AGENTS.md
 .DS_Store
 consumers/*/target/
 consumers/*/Cargo.lock
+*.tgz

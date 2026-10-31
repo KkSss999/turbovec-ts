@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-`0.2.x` is a pre-release line. Security fixes target the latest `0.2.x` version.
+`0.3.x` is a pre-release line. Security fixes target the latest `0.3.x` version.
 
 ## Reporting a vulnerability
 
@@ -12,21 +12,20 @@ Use GitHub private vulnerability reporting:
 https://github.com/KkSss999/turbovec-ts/security/advisories/new
 ```
 
-Do not open a public issue for a suspected vulnerability. Include:
-
-- affected version and target
-- a minimal reproducer
-- expected and actual behavior
-- impact and any known workaround
+Do not open a public issue for a suspected vulnerability. Include the package version, platform,
+Node/Bun/Electron version, a minimal reproducer, and impact.
 
 Do not include credentials, private datasets, or production index files.
 
 ## Scope
 
-Relevant areas include input validation, file loading and persistence, index lifecycle, and
-resource accounting. The crate does not ship a network listener or authentication layer; those
-are consumer responsibilities. The Rust core lives in the sibling `turbovec` project; report core
-format or kernel issues upstream as well.
+Relevant areas include the sidecar binary, the JS client/sidecar protocol, input validation, file
+loading/persistence, and sidecar process lifecycle. The package does not ship a network listener
+or authentication layer; consumer-owned servers and IPC are outside this package's security
+boundary.
+
+The Rust core lives in the upstream `turbovec` project; report core format or kernel issues there
+as well.
 
 ## Response
 
