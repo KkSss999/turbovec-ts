@@ -1,4 +1,4 @@
-import { readdir, utimes } from 'node:fs/promises';
+import { chmod, readdir, utimes } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 
 import { expect, test } from 'bun:test';
@@ -308,6 +308,8 @@ test('checkpoint writes a loadable full snapshot', async () => {
     await index.add(vectors);
     await index.checkpoint(path);
 
+    expect(index.lastWarning).toBeNull();
+
     const loaded = await TurboQuantIndex.load(path);
     expect(loaded.length).toBe(3);
   } finally {
@@ -442,3 +444,25 @@ test('checkpoint with durable=false still writes a loadable file', async () => {
     await Bun.$`rm -rf ${dir.trim()}`;
   }
 });
+
+test.skipIf(process.platform === 'win32' || process.getuid?.() === 0)(
+  'reports a parent directory fsync warning after commit',
+  async () => {
+    const dir = await Bun.$`mktemp -d`.text();
+    const path = `${dir.trim()}/index.tv`;
+    const index = new TurboQuantIndex(8, 4);
+    await index.add(vectors);
+    try {
+      await chmod(dir.trim(), 0o300);
+      await index.checkpoint(path);
+      expect(index.lastWarning).toContain('parent directory fsync failed');
+
+      await chmod(dir.trim(), 0o700);
+      await index.checkpoint(path);
+      expect(index.lastWarning).toBeNull();
+    } finally {
+      await chmod(dir.trim(), 0o700).catch(() => {});
+      await Bun.$`rm -rf ${dir.trim()}`;
+    }
+  },
+);

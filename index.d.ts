@@ -43,6 +43,8 @@ export declare class TurboQuantIndex {
   get bitWidth(): number;
   get isDisposed(): boolean;
   get estimatedBytes(): number;
+  /** Post-commit checkpoint warning, or null when the last checkpoint was clean. */
+  get lastWarning(): string | null;
 }
 
 export declare class IdMapIndex {
@@ -82,4 +84,6 @@ export declare class IdMapIndex {
   get bitWidth(): number;
   get isDisposed(): boolean;
   get estimatedBytes(): number;
+  /** Post-commit checkpoint warning, or null when the last checkpoint was clean. */
+  get lastWarning(): string | null;
 }

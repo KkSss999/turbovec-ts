@@ -119,10 +119,33 @@ fn create_checkpoint_tmp(path: &Path) -> std::io::Result<(File, PathBuf)> {
 }
 
 #[cfg(windows)]
+fn move_file_write_through(tmp: &Path, path: &Path) -> std::io::Result<()> {
+    use std::os::windows::ffi::OsStrExt;
+    use windows_sys::Win32::Storage::FileSystem::{
+        MoveFileExW, MOVEFILE_REPLACE_EXISTING, MOVEFILE_WRITE_THROUGH,
+    };
+
+    let tmp: Vec<u16> = tmp.as_os_str().encode_wide().chain(Some(0)).collect();
+    let path: Vec<u16> = path.as_os_str().encode_wide().chain(Some(0)).collect();
+    let result = unsafe {
+        MoveFileExW(
+            tmp.as_ptr(),
+            path.as_ptr(),
+            MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH,
+        )
+    };
+    if result == 0 {
+        Err(std::io::Error::last_os_error())
+    } else {
+        Ok(())
+    }
+}
+
+#[cfg(windows)]
 fn rename_checkpoint(tmp: &Path, path: &Path) -> std::io::Result<()> {
     let mut delay_ms = 1u64;
     for _ in 0..10 {
-        match std::fs::rename(tmp, path) {
+        match move_file_write_through(tmp, path) {
             Err(error) if matches!(error.raw_os_error(), Some(5) | Some(32)) => {
                 std::thread::sleep(std::time::Duration::from_millis(delay_ms));
                 delay_ms = (delay_ms * 2).min(64);
@@ -130,7 +153,7 @@ fn rename_checkpoint(tmp: &Path, path: &Path) -> std::io::Result<()> {
             result => return result,
         }
     }
-    std::fs::rename(tmp, path)
+    move_file_write_through(tmp, path)
 }
 
 #[cfg(not(windows))]
@@ -182,7 +205,21 @@ fn sweep_stale_tmps(path: &Path) {
     }
 }
 
-fn checkpoint_to_file<F>(path: &Path, durable: bool, write: F) -> Result<()>
+fn sync_checkpoint_parent(parent: &Path) -> Option<String> {
+    #[cfg(unix)]
+    {
+        if let Err(error) = File::open(parent).and_then(|directory| directory.sync_all()) {
+            return Some(format!(
+                "checkpoint committed, but parent directory fsync failed: {error}; the rename may not survive power loss"
+            ));
+        }
+    }
+    #[cfg(not(unix))]
+    let _ = parent;
+    None
+}
+
+fn checkpoint_to_file<F>(path: &Path, durable: bool, write: F) -> Result<Option<String>>
 where
     F: FnOnce(&mut File) -> Result<()>,
 {
@@ -211,14 +248,10 @@ where
 
     rename_checkpoint(&tmp, path).map_err(|e| io_error(e.to_string()))?;
     if durable {
-        #[cfg(unix)]
-        {
-            if let Ok(directory) = File::open(parent) {
-                let _ = directory.sync_all();
-            }
-        }
+        Ok(sync_checkpoint_parent(parent))
+    } else {
+        Ok(None)
     }
-    Ok(())
 }
 
 
@@ -266,6 +299,7 @@ pub struct TurboQuantIndex {
     dim: u32,
     bit_width: u32,
     accounted_bytes: AtomicI64,
+    last_warning: Arc<RwLock<Option<String>>>,
 }
 
 #[napi]
@@ -281,6 +315,7 @@ impl TurboQuantIndex {
             dim,
             bit_width,
             accounted_bytes: AtomicI64::new(0),
+            last_warning: Arc::new(RwLock::new(None)),
         })
     }
 
@@ -295,6 +330,7 @@ impl TurboQuantIndex {
             dim: dim as u32,
             bit_width: bit_width as u32,
             accounted_bytes: AtomicI64::new(0),
+            last_warning: Arc::new(RwLock::new(None)),
         })
     }
 
@@ -455,16 +491,19 @@ impl TurboQuantIndex {
     #[napi]
     pub async fn checkpoint(&self, path: String, durable: Option<bool>) -> Result<()> {
         let inner = Arc::clone(&self.inner);
+        let last_warning = Arc::clone(&self.last_warning);
         let durable = durable.unwrap_or(true);
 
         napi::tokio::task::spawn_blocking(move || -> Result<()> {
-            checkpoint_to_file(Path::new(&path), durable, |file| {
+            let warning = checkpoint_to_file(Path::new(&path), durable, |file| {
                 let guard = inner.read().map_err(|_| lock_error())?;
                 let index = guard.as_ref().ok_or_else(disposed)?;
                 index
                     .write_to_writer(file)
                     .map_err(|e| io_error(e.to_string()))
-            })
+            })?;
+            *last_warning.write().map_err(|_| lock_error())? = warning;
+            Ok(())
         })
         .await
         .map_err(task_error)?
@@ -552,6 +591,15 @@ impl TurboQuantIndex {
     }
 
     #[napi(getter)]
+    pub fn last_warning(&self) -> Result<Option<String>> {
+        Ok(self
+            .last_warning
+            .read()
+            .map_err(|_| lock_error())?
+            .clone())
+    }
+
+    #[napi(getter)]
     pub fn estimated_bytes(&self) -> Result<f64> {
         let guard = self.inner.read().map_err(|_| lock_error())?;
         let Some(index) = guard.as_ref() else {
@@ -582,6 +630,7 @@ pub struct IdMapIndex {
     dim: u32,
     bit_width: u32,
     accounted_bytes: AtomicI64,
+    last_warning: Arc<RwLock<Option<String>>>,
 }
 
 #[napi]
@@ -597,6 +646,7 @@ impl IdMapIndex {
             dim,
             bit_width,
             accounted_bytes: AtomicI64::new(0),
+            last_warning: Arc::new(RwLock::new(None)),
         })
     }
 
@@ -611,6 +661,7 @@ impl IdMapIndex {
             dim: dim as u32,
             bit_width: bit_width as u32,
             accounted_bytes: AtomicI64::new(0),
+            last_warning: Arc::new(RwLock::new(None)),
         })
     }
 
@@ -780,16 +831,19 @@ impl IdMapIndex {
     #[napi]
     pub async fn checkpoint(&self, path: String, durable: Option<bool>) -> Result<()> {
         let inner = Arc::clone(&self.inner);
+        let last_warning = Arc::clone(&self.last_warning);
         let durable = durable.unwrap_or(true);
 
         napi::tokio::task::spawn_blocking(move || -> Result<()> {
-            checkpoint_to_file(Path::new(&path), durable, |file| {
+            let warning = checkpoint_to_file(Path::new(&path), durable, |file| {
                 let guard = inner.read().map_err(|_| lock_error())?;
                 let index = guard.as_ref().ok_or_else(disposed)?;
                 index
                     .write_to_writer(file)
                     .map_err(|e| io_error(e.to_string()))
-            })
+            })?;
+            *last_warning.write().map_err(|_| lock_error())? = warning;
+            Ok(())
         })
         .await
         .map_err(task_error)?
@@ -881,6 +935,15 @@ impl IdMapIndex {
     pub fn is_disposed(&self) -> Result<bool> {
         let guard = self.inner.read().map_err(|_| lock_error())?;
         Ok(guard.is_none())
+    }
+
+    #[napi(getter)]
+    pub fn last_warning(&self) -> Result<Option<String>> {
+        Ok(self
+            .last_warning
+            .read()
+            .map_err(|_| lock_error())?
+            .clone())
     }
 
     #[napi(getter)]

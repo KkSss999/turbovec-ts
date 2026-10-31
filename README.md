@@ -11,8 +11,9 @@ below the first planned public milestone, 0.1.0.
 - No CI, GitHub Actions, or release automation until 1.0.0.
 - No npm publication until explicitly approved.
 - Local checks are the gate: `bun run check`, `bun run test`, and a native build.
-- Linux x64 has been built and smoke-tested, including a packaged Electron app. Other
-  platforms are unverified.
+- Linux x64 has been built and smoke-tested, including a packaged Electron app.
+- The Rust addon compiles for Linux arm64, Windows x64/arm64, and macOS x64/arm64. Those
+  targets have not been loaded or smoke-tested; see [`docs/durability.md`](docs/durability.md).
 
 ## Requirements
 
@@ -104,6 +105,10 @@ checkpoint is undefined: the new file may be missing or truncated, and the previ
 also be lost. Use it only for disposable or regenerable data, never as the only copy. See
 [`docs/versioned-checkpoint.md`](docs/versioned-checkpoint.md) for a crash-safe fast pattern
 built from the public primitives.
+
+A durable checkpoint can still succeed with a durability warning: if the file was renamed but
+the parent-directory fsync failed, `index.lastWarning` contains a message. The file is visible
+and complete, but the rename may not survive power loss.
 
 Locking:
 

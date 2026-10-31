@@ -16,5 +16,8 @@ turbovec-core = { package = "turbovec", path = "../turbovec/turbovec" }
 napi = { version = "3", features = ["napi8", "async"] }
 napi-derive = "3"
 
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = ["Win32_Storage_FileSystem"] }
+
 [build-dependencies]
 napi-build = "2"
