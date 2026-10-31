@@ -58,7 +58,9 @@ Dense methods: `add`, `swapRemove`, `search` (optional byte mask), `checkpoint`/
 Id-map methods: `addWithIds`, `search` (optional allowlist), `remove`, `contains`, `iterIds`,
 `checkpoint`/`write`, `sync`, `calibrate`, `prepare`, `stats`, `close`, static `load`.
 
-All index operations are asynchronous because they cross the sidecar process boundary.
+All index operations are asynchronous because they cross the sidecar process boundary. Bulk
+`add`/`addWithIds` calls are chunked; a failure after an earlier chunk can leave a committed
+prefix, so rebuild or clear before retrying a failed bulk load.
 
 ## Architecture
 

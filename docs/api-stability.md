@@ -42,6 +42,8 @@ these. The sidecar protocol is private and may change independently.
 - Search results are typed arrays: dense returns `indices: number[]`; id-map returns
   `ids: BigUint64Array`.
 - One index instance owns one sidecar process and one persisted index.
+- `add`/`addWithIds` are chunked internally. If a later chunk fails, earlier chunks may already
+  be committed; rebuild or clear the index before retrying a failed bulk load.
 - The package owns sidecar lifecycle. Consumers own their own HTTP/gRPC/MCP/server layers.
 
 ## Platform claims
