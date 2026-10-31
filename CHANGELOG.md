@@ -33,6 +33,9 @@ Prepared release candidate. Not published.
 
 ### Changed
 
+- Documented the service-mode migration path: Rust owns the index runtime, Node remains a thin
+  client. The N-API binding stays until parity and IPC benchmarks pass.
+
 - Version moved from `0.0.1` to `0.1.1`.
 - Checkpoint serialization streams to a temp file instead of copying the full image in memory.
 - Windows checkpoint rename uses `MoveFileExW` with `MOVEFILE_WRITE_THROUGH`.
