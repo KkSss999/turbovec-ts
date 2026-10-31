@@ -17,7 +17,7 @@ If a durable checkpoint commits the rename but the parent-directory fsync fails,
 `index.lastWarning` reports it. The save is not reported as failed because the new file is
 already visible; failing the call would invite a destructive retry.
 
-## Platform status (2026-08)
+## Platform status (2026-10)
 
 | Target        | Compile check | Runtime smoke | Notes                                                                       |
 | ------------- | ------------- | ------------- | --------------------------------------------------------------------------- |

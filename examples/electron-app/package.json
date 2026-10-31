@@ -1,6 +1,6 @@
 {
   "name": "turbovec-ts-electron-smoke",
-  "version": "0.0.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Packaged Electron utilityProcess smoke test for turbovec-ts",
   "main": "main.cjs",

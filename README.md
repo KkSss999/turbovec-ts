@@ -5,15 +5,20 @@ vector index with 2-4 bit quantization and SIMD search.
 
 ## Status
 
-**Pre-alpha, version 0.0.1.** The API is unstable and may change without notice. This is
-below the first planned public milestone, 0.1.0.
+**0.1.1, prepared release candidate. Not published.**
+
+The `0.1.x` public API is frozen for patch releases; additions are allowed, but a breaking
+change requires a minor bump and a deprecation path. See
+[`docs/api-stability.md`](docs/api-stability.md).
 
 - No CI, GitHub Actions, or release automation until 1.0.0.
-- No npm publication until explicitly approved.
-- Local checks are the gate: `bun run check`, `bun run test`, and a native build.
-- Linux x64 has been built and smoke-tested, including a packaged Electron app.
-- The Rust addon compiles for Linux arm64, Windows x64/arm64, and macOS x64/arm64. Those
-  targets have not been loaded or smoke-tested; see [`docs/durability.md`](docs/durability.md).
+- No npm publication until explicitly approved. `"private": true` is an intentional guard.
+- Local checks are the gate: `bun run check`, `bun run test`, `bun run release:check`, and a
+  native build.
+- Linux x64 is built, tested, and packaged, including a packaged Electron app.
+- Linux arm64, Windows x64/arm64, and macOS x64/arm64 compile but are not yet runtime-supported;
+  see [`docs/durability.md`](docs/durability.md).
+- Release steps and the artifact matrix live in [`docs/release.md`](docs/release.md).
 
 ## Requirements
 
@@ -29,6 +34,7 @@ bun install
 bun run build:debug
 bun run check
 bun run test
+bun run release:check
 ```
 
 Release-style build:
@@ -178,10 +184,15 @@ Use a `utilityProcess` that owns the index; the renderer talks over narrow IPC. 
 [`examples/electron-app/README.md`](examples/electron-app/README.md) for a packaged smoke
 test that builds and runs the app.
 
+## Documentation
+
+- API stability: [`docs/api-stability.md`](docs/api-stability.md)
+- Release process: [`docs/release.md`](docs/release.md)
+- Durability and platforms: [`docs/durability.md`](docs/durability.md)
+- Versioned checkpoints: [`docs/versioned-checkpoint.md`](docs/versioned-checkpoint.md)
+- Changelog: [`CHANGELOG.md`](CHANGELOG.md)
+
 ## License
 
-MIT. See [LICENSE](LICENSE).
-
-## License
-
-MIT. The native addon links the turbovec core, also MIT; see `LICENSE-TURBOVEC`.
+MIT. The native addon links the turbovec core, also MIT; see [LICENSE](LICENSE) and
+[`LICENSE-TURBOVEC`](LICENSE-TURBOVEC).

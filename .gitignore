@@ -6,6 +6,7 @@ target/
 dist/
 npm/
 coverage/
+*.tgz
 *.node
 *.so
 *.dylib

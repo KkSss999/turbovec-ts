@@ -336,8 +336,14 @@ impl TurboQuantIndex {
 
     #[napi]
     pub async fn add(&self, vectors: Float32Array) -> Result<()> {
-        let data = vectors.to_vec();
         let dim = self.dim as usize;
+        if vectors.len() % dim != 0 {
+            return Err(err(
+                ErrorCode::InvalidInput,
+                "vectors length must be a multiple of dim",
+            ));
+        }
+        let data = vectors.to_vec();
         let inner = Arc::clone(&self.inner);
 
         napi::tokio::task::spawn_blocking(move || -> Result<()> {
@@ -667,9 +673,22 @@ impl IdMapIndex {
 
     #[napi]
     pub async fn add_with_ids(&self, vectors: Float32Array, ids: BigUint64Array) -> Result<()> {
+        let dim = self.dim as usize;
+        if vectors.len() % dim != 0 {
+            return Err(err(
+                ErrorCode::InvalidInput,
+                "vectors length must be a multiple of dim",
+            ));
+        }
+        let rows = vectors.len() / dim;
+        if ids.len() != rows {
+            return Err(err(
+                ErrorCode::InvalidInput,
+                format!("expected {rows} ids, got {}", ids.len()),
+            ));
+        }
         let data = vectors.to_vec();
         let ids = ids.to_vec();
-        let dim = self.dim as usize;
         let inner = Arc::clone(&self.inner);
 
         napi::tokio::task::spawn_blocking(move || -> Result<()> {

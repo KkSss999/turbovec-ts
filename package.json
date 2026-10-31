@@ -1,8 +1,17 @@
 {
   "name": "turbovec-ts",
-  "version": "0.0.1",
+  "version": "0.1.1",
   "private": true,
   "description": "TypeScript/Node.js bindings for turbovec, a 2-4 bit vector quantization and SIMD search library.",
+  "keywords": [
+    "ann",
+    "napi",
+    "quantization",
+    "rust",
+    "simd",
+    "vector",
+    "vector-search"
+  ],
   "homepage": "https://github.com/KkSss999/turbovec-ts",
   "bugs": {
     "url": "https://github.com/KkSss999/turbovec-ts/issues"
@@ -25,7 +34,9 @@
     "index.js",
     "native.cjs",
     "native.d.ts",
-    "native.js"
+    "native.js",
+    "CHANGELOG.md",
+    "docs/"
   ],
   "type": "module",
   "main": "./index.cjs",
@@ -52,7 +63,10 @@
     "lint:fix": "oxlint --fix",
     "typecheck": "oxlint --type-aware --type-check --no-error-on-unmatched-pattern",
     "check": "bun run format:check && bun run lint && bun run typecheck",
-    "test": "bun test tests/smoke.test.ts",
+    "test": "bun test tests/smoke.test.ts tests/robustness.test.ts",
+    "release:check": "bun scripts/check-release.ts",
+    "prepack": "bun run release:check",
+    "prepublishOnly": "bun run release:check && bun run check && bun run test",
     "test:interop": "bun scripts/require-interop.ts && bun test tests/interop.test.ts",
     "build:cjs": "napi build --platform --release --js native.cjs --dts native.d.ts",
     "build:esm": "napi build --platform --release --esm --js native.js --dts native.d.ts",
@@ -68,8 +82,25 @@
     "oxlint": "^1.90.0",
     "oxlint-tsgolint": "^7.0.2005"
   },
+  "optionalDependencies": {
+    "turbovec-ts-darwin-arm64": "0.1.1",
+    "turbovec-ts-darwin-x64": "0.1.1",
+    "turbovec-ts-linux-arm64-gnu": "0.1.1",
+    "turbovec-ts-linux-x64-gnu": "0.1.1",
+    "turbovec-ts-win32-arm64-msvc": "0.1.1",
+    "turbovec-ts-win32-x64-msvc": "0.1.1"
+  },
   "napi": {
-    "binaryName": "turbovec-ts"
+    "binaryName": "turbovec-ts",
+    "npmClient": "bun",
+    "targets": [
+      "x86_64-unknown-linux-gnu",
+      "aarch64-unknown-linux-gnu",
+      "x86_64-pc-windows-msvc",
+      "aarch64-pc-windows-msvc",
+      "x86_64-apple-darwin",
+      "aarch64-apple-darwin"
+    ]
   },
   "engines": {
     "node": ">=20.17"
