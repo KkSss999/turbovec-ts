@@ -181,3 +181,7 @@ test that builds and runs the app.
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+## License
+
+MIT. The native addon links the turbovec core, also MIT; see `LICENSE-TURBOVEC`.

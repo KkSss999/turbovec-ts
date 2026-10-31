@@ -15,6 +15,7 @@
   "files": [
     "*.node",
     "LICENSE",
+    "LICENSE-TURBOVEC",
     "README.md",
     "errors.cjs",
     "errors.d.ts",
