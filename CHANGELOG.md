@@ -6,7 +6,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [0.3.0] - 2026-10-31
 
-Pre-release. Not published.
+Published.
 
 ### Changed
 
@@ -19,7 +19,7 @@ Pre-release. Not published.
 - `turbovecd` sidecar and the `turbovec-ts` JS client.
 - Dense and id-map add/search, masks/allowlists, snapshots, sync, calibration, stats, close, and
   load.
-- Bundled Linux x64, Windows x64, and macOS arm64 sidecar binaries.
+- Bundled Linux x64 glibc, Linux x64 musl, Windows x64, and macOS arm64 sidecar binaries.
 
 ### Removed
 

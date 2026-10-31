@@ -1,7 +1,6 @@
 {
   "name": "turbovec-ts",
   "version": "0.3.0",
-  "private": true,
   "description": "Node.js API for turbovec, backed by a bundled Rust sidecar",
   "license": "MIT",
   "type": "module",
@@ -48,5 +47,8 @@
     "turbovec",
     "napi",
     "rust"
-  ]
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
 }

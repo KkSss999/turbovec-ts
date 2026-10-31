@@ -1,7 +1,6 @@
 # Release process
 
-The package is not published. `package.json` keeps `"private": true` and `Cargo.toml` keeps
-`publish = false` until an explicit release decision.
+`0.3.0` was released manually. `Cargo.toml` keeps `publish = false`; this project ships the npm package, not a crates.io package.
 
 ## Preflight
 
@@ -33,6 +32,7 @@ The package must contain:
 
 ```text
 bin/linux-x64/turbovecd
+bin/linux-x64-musl/turbovecd
 bin/win32-x64/turbovecd.exe
 bin/darwin-arm64/turbovecd
 ```
@@ -56,11 +56,11 @@ script compiles anything.
 
 Only after approval:
 
-1. Remove `"private": true`.
-2. Bump the package and Cargo versions together.
-3. Rebuild both platform sidecars from the same commit.
-4. Pack and run the tarball smoke.
+1. Bump the package and Cargo versions together.
+2. Rebuild all platform sidecars from the same commit.
+3. Pack and run the tarball smoke.
+4. Push the release commit and tag.
 5. Publish with `bun publish`.
-6. Tag the exact commit.
+6. Create the GitHub release and attach the tarball.
 
 Do not add a server or consumer adapter to make a release possible.
