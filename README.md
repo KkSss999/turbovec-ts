@@ -5,7 +5,7 @@ sidecar. Consumers install the package, import the API, and do not need a Rust t
 
 ## Status
 
-**0.3.2, published.**
+**0.3.3, published.**
 
 - JavaScript/TypeScript API in `index.js` / `index.cjs` / `index.d.ts`
 - Rust runtime in the bundled `turbovecd` sidecar
@@ -24,7 +24,8 @@ darwin-arm64
 
 Linux arm64, Windows arm64, and macOS x64 are explicitly unsupported. The musl sidecar is a
 static-pie binary; the glibc sidecar is the default on glibc systems and the musl sidecar is
-selected on musl systems.
+selected on musl systems. The macOS arm64 sidecar is signed with the project self-signed
+certificate `turbovec-ts Self-Signed` and is not notarized.
 
 ## Install
 
@@ -88,7 +89,7 @@ cp target/release/turbovecd bin/linux-x64/turbovecd
 
 bun test
 bun scripts/soak.mjs
-bun pm pack --filename turbovec-ts-0.3.2.tgz
+bun pm pack --filename turbovec-ts-0.3.3.tgz
 ```
 
 `bun test` covers the public smoke path, chunk rollback, concurrent requests, repeated searches,

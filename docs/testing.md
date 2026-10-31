@@ -46,6 +46,15 @@ The crash test kills the sidecar while a large search is pending, asserts that t
 rejects with `TurbovecError`, and then loads the last checkpoint into a fresh sidecar. The package
 does not restart a killed sidecar automatically; callers reload a checkpoint.
 
+## macOS signature
+
+```bash
+codesign --verify --deep --strict --verbose=4 bin/darwin-arm64/turbovecd
+codesign -dv --verbose=4 bin/darwin-arm64/turbovecd
+```
+
+The binary is signed with `turbovec-ts Self-Signed` and is not notarized.
+
 ## musl
 
 The package selects `bin/linux-x64-musl/turbovecd` on musl systems. The static binary is tested in

@@ -4,6 +4,18 @@ All notable changes to `turbovec-service` are documented here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.3.3] - 2026-10-31
+
+Published.
+
+### Changed
+
+- macOS arm64 sidecar is self-signed with the project certificate
+  `turbovec-ts Self-Signed` (SHA-256 fingerprint
+  `B8:46:7C:15:8D:78:51:27:B4:03:7C:01:D4:97:17:25:25:DC:24:50:D3:5B:36:0A:18:96:3C:A3:7C:A8:E8:59`).
+  It remains not notarized; users must explicitly trust the certificate if they want Gatekeeper
+  to accept it.
+
 ## [0.3.2] - 2026-10-31
 
 Published.
