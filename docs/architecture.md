@@ -76,11 +76,6 @@ Supported by bundled binaries:
 ```text
 linux-x64
 win32-x64
-```
-
-Pending:
-
-```text
 darwin-arm64
 ```
 

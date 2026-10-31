@@ -34,10 +34,10 @@ The package must contain:
 ```text
 bin/linux-x64/turbovecd
 bin/win32-x64/turbovecd.exe
+bin/darwin-arm64/turbovecd
 ```
 
-macOS arm64 is not staged until a real target binary and smoke test exist. Do not ship a
-placeholder.
+macOS arm64 is built and smoke-tested on the arm64 Mac. Do not ship a placeholder.
 
 ## Package smoke
 

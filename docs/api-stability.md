@@ -53,8 +53,7 @@ Supported binaries:
 ```text
 linux-x64
 win32-x64
+darwin-arm64
 ```
-
-Pending: `darwin-arm64`.
 
 Explicitly unsupported: Linux arm64, Windows arm64, macOS x64, Linux musl.

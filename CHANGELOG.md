@@ -19,7 +19,7 @@ Pre-release. Not published.
 - `turbovecd` sidecar and the `turbovec-ts` JS client.
 - Dense and id-map add/search, masks/allowlists, snapshots, sync, calibration, stats, close, and
   load.
-- Bundled Linux x64 and Windows x64 sidecar binaries.
+- Bundled Linux x64, Windows x64, and macOS arm64 sidecar binaries.
 
 ### Removed
 
@@ -66,7 +66,7 @@ Pre-release. Not published.
 ### Compatibility
 
 - Rust 1.89+.
-- Platform scope: Linux x64 and Windows x64 are tested; macOS arm64 is pending. Linux arm64,
-  Windows arm64, macOS x64, and Linux musl are explicitly unsupported.
+- Platform scope: Linux x64, Windows x64, and macOS arm64 are tested. Linux arm64, Windows arm64,
+  macOS x64, and Linux musl are explicitly unsupported.
 - The archived N-API release candidate is available at git tag `archive/napi-0.1.1`.
 - The crate is not published to crates.io.

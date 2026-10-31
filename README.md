@@ -18,10 +18,10 @@ Platform binaries currently bundled:
 ```text
 linux-x64
 win32-x64
+darwin-arm64
 ```
 
-macOS arm64 is pending. Linux arm64, Windows arm64, macOS x64, and Linux musl are explicitly
-unsupported.
+Linux arm64, Windows arm64, macOS x64, and Linux musl are explicitly unsupported.
 
 ## Install
 
@@ -88,7 +88,8 @@ bun test
 bun pm pack --filename turbovec-ts-0.3.0.tgz
 ```
 
-Windows x64 uses `target/release/turbovecd.exe` copied to `bin/win32-x64/`.
+Windows x64 uses `target/release/turbovecd.exe` copied to `bin/win32-x64/`. macOS arm64 uses
+`target/release/turbovecd` copied to `bin/darwin-arm64/`.
 
 ## Documentation
 
