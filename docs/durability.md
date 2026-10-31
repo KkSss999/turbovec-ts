@@ -22,10 +22,10 @@ destination atomically, but concurrent writers still need an application-level r
 - Linux x64: integration tests cover local persistence.
 - Windows x64: native `cargo test` and the CLI example pass from the Windows toolchain
   (run through WSL2 interop). The core's rename path is used; there is no directory fsync
-  equivalent. Windows arm64 is still compile-only.
-- macOS: compile-checked; run the integration tests and a packaged consumer on arm64 before
-  claiming support.
-- Linux arm64, Windows arm64, macOS x64: compile-checked only until the target tests are run.
+  equivalent.
+- macOS arm64: pending target runtime tests.
+- Linux arm64 and Windows arm64: explicitly unsupported; do not adapt or redistribute.
+- macOS x64 and Linux musl: out of scope.
 
 The service library does not add its own durability warning channel. File and format behavior is
 owned by the upstream core.

@@ -76,5 +76,7 @@ because the core does not expose a length-only method; do not call it on every r
 - Build time is not compared: the first parallel build in a process includes rayon pool
   initialization.
 - Multi-thread numbers on this shared host are noisy; single-thread and the 20K shape are stable.
-- Only Linux x64 was run. Re-run on macOS arm64 and Windows x64 before making platform claims.
+- Only Linux x64 was run for this report. Windows x64 has separate integration/example tests but no
+  committed service benchmark. macOS arm64 is pending. Linux arm64 and Windows arm64 are out of
+  scope.
 - No server, HTTP, gRPC, or IPC overhead is included. Those are consumer-owned layers.

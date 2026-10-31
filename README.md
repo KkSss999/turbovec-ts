@@ -15,8 +15,14 @@ archived 0.1.1 N-API package:
 
 The previous N-API implementation is preserved at the git tag `archive/napi-0.1.1`.
 
-Linux x64 and Windows x64 have both run the Rust integration suite. macOS arm64,
-Linux arm64, and Windows arm64 still need target runtime tests.
+Platform scope:
+
+- **Tested:** Linux x64, Windows x64
+- **Pending:** macOS arm64
+- **Explicitly unsupported:** Linux arm64, Windows arm64, macOS x64, Linux musl
+
+Linux arm64 and Windows arm64 are not adaptation targets. Compilation on another target is not a
+support claim.
 
 ## Scope
 
