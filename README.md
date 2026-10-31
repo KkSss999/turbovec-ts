@@ -86,11 +86,26 @@ cargo doc --no-deps
 There is no Node, npm, Bun, or Python runtime dependency. The optional upstream Python package is
 unrelated to this crate.
 
+## Benchmark
+
+```bash
+RAYON_NUM_THREADS=1 cargo run --release --example service_bench -- --impl core --dim 1536 --n 100000 --nq 100 --k 64 --repeats 7
+RAYON_NUM_THREADS=1 cargo run --release --example service_bench -- --impl service --dim 1536 --n 100000 --nq 100 --k 64 --repeats 7
+```
+
+See [`docs/benchmarks.md`](docs/benchmarks.md).
+
+## Consumer examples
+
+[`consumers/`](consumers/README.md) contains separate CLI, HTTP, and Unix-socket IPC crates. They
+are not part of this library and are not published.
+
 ## Documentation
 
 - Architecture: [`docs/architecture.md`](docs/architecture.md)
 - API stability: [`docs/api-stability.md`](docs/api-stability.md)
 - Durability: [`docs/durability.md`](docs/durability.md)
+- Benchmark: [`docs/benchmarks.md`](docs/benchmarks.md)
 - Release process: [`docs/release.md`](docs/release.md)
 
 ## License

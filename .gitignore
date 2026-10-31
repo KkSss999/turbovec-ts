@@ -5,3 +5,5 @@ AGENTS.md
 /.cache/
 *.swp
 .DS_Store
+consumers/*/target/
+consumers/*/Cargo.lock

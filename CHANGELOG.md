@@ -26,6 +26,8 @@ Pre-release. Not published.
 - Read-lock concurrent search and write-lock mutation/sync behavior.
 - Rust integration tests covering both index kinds, 2/3/4-bit widths, persistence, malformed
   input, close, and concurrent searches.
+- Consumer-owned examples: CLI, Axum HTTP server, and Unix-socket IPC.
+- `service_bench` example and a service-layer benchmark report.
 
 ### Removed
 
