@@ -6,6 +6,7 @@ belongs:
 - `cli/` — a small CLI around the Rust API
 - `http-server/` — an Axum HTTP adapter; add auth, limits, and binary payloads for production
 - `ipc/` — a cross-platform local-socket example (Unix domain socket or Windows named pipe)
+- `pmem-sidecar/` — a pmem-owned JSON-lines sidecar over stdio
 
 Run them with their own manifests:
 
@@ -14,6 +15,7 @@ cargo run --manifest-path consumers/cli/Cargo.toml
 cargo run --manifest-path consumers/ipc/Cargo.toml -- server
 cargo run --manifest-path consumers/ipc/Cargo.toml -- client
 cargo run --manifest-path consumers/http-server/Cargo.toml
+cargo run --manifest-path consumers/pmem-sidecar/Cargo.toml -- --dim 8 --bits 4
 ```
 
 The HTTP and IPC examples use demo vectors and are intentionally minimal. The IPC example uses

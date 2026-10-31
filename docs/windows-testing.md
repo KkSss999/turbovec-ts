@@ -65,6 +65,7 @@ On 2026-10-31 on Windows x64:
 - CLI example: passed
 - HTTP example: `/search` returned the expected top-2
 - IPC example: named-pipe server/client returned the expected top-2
+- pmem sidecar example: JSON-lines add/search/stats returned the expected ids and scores
 
 ## Notes
 

@@ -3,7 +3,7 @@
 ## Requirements
 
 - Rust 1.89+
-- The sibling `../turbovec` core checkout
+- Network access for the crates.io `turbovec = "1.1.2"` dependency
 
 ## Checks
 

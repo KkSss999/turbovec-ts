@@ -19,8 +19,9 @@ Update `CHANGELOG.md`, `README.md`, and the version in `Cargo.toml` before taggi
 - `0.2.0` is the first service-layer pre-release.
 - The archived N-API implementation is the git tag `archive/napi-0.1.1`; do not reuse its
   version or package name.
-- The crate depends on a sibling path core checkout. Publishing to crates.io requires a
-  published core version and a dependency change; do not do that implicitly.
+- The crate depends on the crates.io `turbovec = "1.1.2"` package, not a sibling path. A future
+  crates.io release only requires changing `publish = false` and following the normal publish
+  approval; do not publish implicitly.
 
 ## Release artifact
 

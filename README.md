@@ -38,7 +38,8 @@ consumer's process or wrapped by a consumer's server.
 
 ## Install
 
-The crate depends on the sibling core checkout and is not published yet:
+The crate is not published yet; use a path or a pinned git revision. It depends on the
+crates.io `turbovec = "1.1.2"` core:
 
 ```toml
 [dependencies]
@@ -106,8 +107,9 @@ See [`docs/benchmarks.md`](docs/benchmarks.md).
 
 ## Consumer examples
 
-[`consumers/`](consumers/README.md) contains separate CLI, HTTP, and Unix-socket IPC crates. They
-are not part of this library and are not published.
+[`consumers/`](consumers/README.md) contains separate CLI, HTTP, IPC, and pmem-sidecar examples.
+They are not part of this library and are not published. See
+[`docs/pmem-integration.md`](docs/pmem-integration.md) for the pmem adapter pattern.
 
 ## Documentation
 

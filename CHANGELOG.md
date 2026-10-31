@@ -26,8 +26,10 @@ Pre-release. Not published.
 - Read-lock concurrent search and write-lock mutation/sync behavior.
 - Rust integration tests covering both index kinds, 2/3/4-bit widths, persistence, malformed
   input, close, and concurrent searches.
-- Consumer-owned examples: CLI, Axum HTTP server, and cross-platform local-socket IPC (Unix
-  socket or Windows named pipe).
+- Consumer-owned examples: CLI, Axum HTTP server, cross-platform local-socket IPC, and a
+  pmem-style JSON-lines sidecar.
+- The core dependency now comes from crates.io (`turbovec = "1.1.2"`), so consumers do not need a
+  sibling core checkout.
 - `service_bench` example and a service-layer benchmark report.
 
 ### Removed
