@@ -20,6 +20,11 @@ This crate is a library. Do not add a network listener, daemon, IPC server, auth
 queue. Consumers own transports and admission control. Keep the service API independent of any
 specific server.
 
+## Windows from WSL2
+
+See [`docs/windows-testing.md`](docs/windows-testing.md) for running the native Windows test
+suite through WSL interop.
+
 ## Tests
 
 - New behavior needs a test that fails without the change.

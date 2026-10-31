@@ -15,6 +15,9 @@ archived 0.1.1 N-API package:
 
 The previous N-API implementation is preserved at the git tag `archive/napi-0.1.1`.
 
+Linux x64 and Windows x64 have both run the Rust integration suite. macOS arm64,
+Linux arm64, and Windows arm64 still need target runtime tests.
+
 ## Scope
 
 ```text
@@ -106,6 +109,7 @@ are not part of this library and are not published.
 - API stability: [`docs/api-stability.md`](docs/api-stability.md)
 - Durability: [`docs/durability.md`](docs/durability.md)
 - Benchmark: [`docs/benchmarks.md`](docs/benchmarks.md)
+- Windows testing from WSL2: [`docs/windows-testing.md`](docs/windows-testing.md)
 - Release process: [`docs/release.md`](docs/release.md)
 
 ## License

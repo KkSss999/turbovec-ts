@@ -38,5 +38,7 @@ Pre-release. Not published.
 ### Compatibility
 
 - Rust 1.89+.
+- Linux x64 and Windows x64 native integration tests pass. Other targets are compile-checked
+  only until target runtime tests are run.
 - The archived N-API release candidate is available at git tag `archive/napi-0.1.1`.
 - The crate is not published to crates.io.

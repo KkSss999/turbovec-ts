@@ -20,8 +20,9 @@ destination atomically, but concurrent writers still need an application-level r
 ## Platform notes
 
 - Linux x64: integration tests cover local persistence.
-- Windows: the core's rename path is used; no directory fsync equivalent exists. Verify on the
-  target.
+- Windows x64: native `cargo test` and the CLI example pass from the Windows toolchain
+  (run through WSL2 interop). The core's rename path is used; there is no directory fsync
+  equivalent. Windows arm64 is still compile-only.
 - macOS: compile-checked; run the integration tests and a packaged consumer on arm64 before
   claiming support.
 - Linux arm64, Windows arm64, macOS x64: compile-checked only until the target tests are run.
