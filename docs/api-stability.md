@@ -42,9 +42,11 @@ these. The sidecar protocol is private and may change independently.
 - Search results are typed arrays: dense returns `indices: number[]`; id-map returns
   `ids: BigUint64Array`.
 - One index instance owns one sidecar process and one persisted index.
-- `add`/`addWithIds` are chunked internally. If a later chunk fails, earlier chunks may already
-  be committed; rebuild or clear the index before retrying a failed bulk load.
+- `add`/`addWithIds` are chunked and serialized per instance. If a later chunk fails while the
+  sidecar is alive, the client removes chunks it already committed. A process crash cannot be
+  rolled back in memory; reload the last checkpoint.
 - The package owns sidecar lifecycle. Consumers own their own HTTP/gRPC/MCP/server layers.
+- A sidecar exit rejects pending requests with `ERR_TURBOVEC_IO`; it is not restarted automatically.
 
 ## Platform claims
 
@@ -57,4 +59,4 @@ win32-x64
 darwin-arm64
 ```
 
-Explicitly unsupported: Linux arm64, Windows arm64, macOS x64, Linux musl.
+Explicitly unsupported: Linux arm64, Windows arm64, macOS x64.

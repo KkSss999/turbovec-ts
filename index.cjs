@@ -1,2 +1,2 @@
-'use strict';
-module.exports = require('./lib/client.cjs');
+"use strict";
+module.exports = require("./lib/client.cjs");

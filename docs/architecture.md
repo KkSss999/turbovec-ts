@@ -11,9 +11,11 @@ consumer application
   ▼
 turbovec-ts package
   ├── platform sidecar binary
-  ├── spawn / ready / restart / shutdown
+  ├── spawn / ready / shutdown
+  ├── checkpoint-based crash recovery
   ├── framed stdio transport
-  ├── request queue
+  ├── pending-request map
+  ├── per-instance mutation queue
   └── error mapping
         │
         ▼
@@ -65,9 +67,11 @@ change with the package version. It is not a public API.
 ## Concurrency
 
 The sidecar processes requests sequentially and uses Rust rayon inside search. The JS client
-keeps a pending-request map and can pipeline requests, but the sidecar remains the single index
-owner. Consumers that need admission control should add it in their application around the
-package API.
+keeps a pending-request map and can pipeline requests. Bulk mutations are serialized per index
+instance; on a failed chunk the client rolls back committed chunks. The sidecar remains the
+single index owner, but a process crash cannot be rolled back in memory: pending requests reject
+with `ERR_TURBOVEC_IO` and callers reload the last checkpoint. Consumers that need admission
+control should add it in their application around the package API.
 
 ## Platform policy
 
@@ -86,7 +90,6 @@ Explicitly unsupported:
 linux-arm64
 win32-arm64
 darwin-x64
-linux-musl
 ```
 
 Compilation on another target is not a support claim.

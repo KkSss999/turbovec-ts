@@ -1,6 +1,6 @@
 {
   "name": "turbovec-ts",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Node.js API for turbovec, backed by a bundled Rust sidecar",
   "license": "MIT",
   "type": "module",
@@ -29,7 +29,8 @@
     "node": ">=20.17"
   },
   "scripts": {
-    "test": "bun test"
+    "test": "bun test",
+    "soak": "bun scripts/soak.mjs"
   },
   "homepage": "https://github.com/KkSss999/turbovec-ts",
   "bugs": {

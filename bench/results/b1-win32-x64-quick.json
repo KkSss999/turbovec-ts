@@ -10,25 +10,25 @@
   },
   "sidecar": {
     "rssBeforeAdd": {
-      "node": 103.1015625,
+      "node": 102.890625,
       "sidecar": 4.16796875
     },
     "rssAfterAdd": {
-      "node": 103.25390625,
-      "sidecar": 29.15234375
+      "node": 102.953125,
+      "sidecar": 29.19140625
     },
     "rssAfterSearch": {
-      "node": 103.99609375,
-      "sidecar": 31.23828125
+      "node": 103.37890625,
+      "sidecar": 31.4921875
     },
-    "coldStartMs": 145.10320000000002,
-    "addMs": 125.22489999999993,
-    "singleP50Ms": 0.8649000000000342,
-    "singleP95Ms": 1.0715999999999894,
-    "singleP99Ms": 4.807999999999993,
-    "singleQps": 1156.203029251891,
-    "batchP50Ms": 5.490200000000186,
-    "batchQps": 18214.27270409031,
+    "coldStartMs": 148.01080000000002,
+    "addMs": 130.77890000000002,
+    "singleP50Ms": 0.8711000000000695,
+    "singleP95Ms": 0.9990999999999985,
+    "singleP99Ms": 1.2533000000000811,
+    "singleQps": 1147.973826196671,
+    "batchP50Ms": 5.085800000000063,
+    "batchQps": 19662.589956348806,
     "stats": {
       "kind": "dense",
       "dim": 768,
@@ -39,13 +39,13 @@
     }
   },
   "core": {
-    "add_ms": 159.982,
-    "single_p50_ms": 0.7064,
-    "single_p95_ms": 0.7612,
-    "single_p99_ms": 1.0065,
-    "single_qps": 1415.6,
-    "batch_p50_ms": 4.094,
-    "batch_qps": 24426.6,
-    "rss_after_add_mb": 0
+    "add_ms": 159.384,
+    "single_p50_ms": 0.7016,
+    "single_p95_ms": 0.7371,
+    "single_p99_ms": 0.7609,
+    "single_qps": 1425.3,
+    "batch_p50_ms": 4.139,
+    "batch_qps": 24162.8,
+    "rss_after_add_mb": 72.281
   }
 }

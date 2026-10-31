@@ -75,6 +75,7 @@ fn read_f32(path: &str) -> Vec<f32> {
         .collect()
 }
 
+#[cfg(target_os = "linux")]
 fn rss_mb() -> f64 {
     let Ok(status) = fs::read_to_string("/proc/self/status") else {
         return 0.0;
@@ -91,6 +92,40 @@ fn rss_mb() -> f64 {
         }
     }
     0.0
+}
+
+#[cfg(windows)]
+fn rss_mb() -> f64 {
+    let output = std::process::Command::new("powershell.exe")
+        .args([
+            "-NoProfile",
+            "-Command",
+            &format!("(Get-Process -Id {}).WorkingSet64", std::process::id()),
+        ])
+        .output();
+    let Ok(output) = output else {
+        return 0.0;
+    };
+    String::from_utf8_lossy(&output.stdout)
+        .trim()
+        .parse::<f64>()
+        .map(|bytes| bytes / 1024.0 / 1024.0)
+        .unwrap_or(0.0)
+}
+
+#[cfg(target_os = "macos")]
+fn rss_mb() -> f64 {
+    let output = std::process::Command::new("ps")
+        .args(["-o", "rss=", "-p", &std::process::id().to_string()])
+        .output();
+    let Ok(output) = output else {
+        return 0.0;
+    };
+    String::from_utf8_lossy(&output.stdout)
+        .trim()
+        .parse::<f64>()
+        .map(|kb| kb / 1024.0)
+        .unwrap_or(0.0)
 }
 
 fn median(mut values: Vec<f64>) -> f64 {

@@ -21,7 +21,12 @@ JS process never holds the index buffer. `sync` is single-writer per path.
   is smoke-tested with the package client.
 - Windows x64: native sidecar tests and packaged-client tests pass.
 - macOS arm64: native tests and the packaged client smoke pass.
-- Linux arm64, Windows arm64, macOS x64, Linux musl: unsupported.
+- Linux arm64, Windows arm64, macOS x64: unsupported.
 
 On Windows the core uses its normal rename path; there is no directory-fsync equivalent. The
 package does not add a separate durability warning channel.
+
+Bulk `add`/`addWithIds` rollback covers failures returned while the sidecar is alive. If the
+sidecar is killed, the in-memory index is lost; restart from the last durable checkpoint. The
+test suite kills a sidecar during a pending search, verifies pending rejection, then loads a
+checkpoint into a fresh sidecar.

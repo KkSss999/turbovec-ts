@@ -4,6 +4,32 @@ All notable changes to `turbovec-service` are documented here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.3.1] - 2026-10-31
+
+Published.
+
+### Fixed
+
+- Bulk `add`/`addWithIds` now rolls back chunks committed before a later chunk fails, and
+  serializes bulk mutations per index instance.
+- Client-side stream errors (including a killed sidecar) now surface as `TurbovecError` instead
+  of raw `EPIPE`.
+- Sidecar stdout/stderr stream errors are mapped to `TurbovecError` instead of leaking raw stream errors.
+
+### Added
+
+- Public smoke tests for dense and id-map workflows, invalid/disposed inputs, and CJS/ESM.
+- Crash recovery test: kill the sidecar during a pending search, then load a checkpoint into a
+  fresh sidecar.
+- Concurrent request stress test and timed `scripts/soak.mjs` with Node/sidecar RSS reporting.
+- Linux musl is now a bundled, default-supported target and is tested under Alpine Node.
+- Direct-core RSS is reported on Windows and macOS as well as Linux.
+
+### Changed
+
+- Platform documentation no longer lists Linux musl as unsupported.
+- Benchmark report generation now combines checked-in results from all supported platforms.
+
 ## [0.3.0] - 2026-10-31
 
 Published.

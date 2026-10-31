@@ -5,7 +5,7 @@ sidecar. Consumers install the package, import the API, and do not need a Rust t
 
 ## Status
 
-**0.3.0, published.**
+**0.3.1, published.**
 
 - JavaScript/TypeScript API in `index.js` / `index.cjs` / `index.d.ts`
 - Rust runtime in the bundled `turbovecd` sidecar
@@ -60,8 +60,9 @@ Id-map methods: `addWithIds`, `search` (optional allowlist), `remove`, `contains
 `checkpoint`/`write`, `sync`, `calibrate`, `prepare`, `stats`, `close`, static `load`.
 
 All index operations are asynchronous because they cross the sidecar process boundary. Bulk
-`add`/`addWithIds` calls are chunked; a failure after an earlier chunk can leave a committed
-prefix, so rebuild or clear before retrying a failed bulk load.
+`add`/`addWithIds` calls are chunked and serialized per index instance. If a chunk fails while the
+sidecar is alive, the client rolls back the chunks it already committed. A sidecar process crash
+cannot be rolled back in memory; reload the last checkpoint.
 
 ## Architecture
 
@@ -86,8 +87,13 @@ cargo build --release --bin turbovecd
 cp target/release/turbovecd bin/linux-x64/turbovecd
 
 bun test
-bun pm pack --filename turbovec-ts-0.3.0.tgz
+bun scripts/soak.mjs
+bun pm pack --filename turbovec-ts-0.3.1.tgz
 ```
+
+`bun test` covers the public smoke path, chunk rollback, concurrent requests, repeated searches,
+and checkpoint recovery after a sidecar kill. `scripts/soak.mjs` runs a timed concurrent load and
+reports Node and sidecar RSS; set `TURBOVEC_SOAK_SECONDS` to run a longer soak.
 
 Windows x64 uses `target/release/turbovecd.exe` copied to `bin/win32-x64/`. macOS arm64 uses
 `target/release/turbovecd` copied to `bin/darwin-arm64/`. The musl sidecar is built with
@@ -98,6 +104,7 @@ Windows x64 uses `target/release/turbovecd.exe` copied to `bin/win32-x64/`. macO
 - Architecture: [`docs/architecture.md`](docs/architecture.md)
 - API stability: [`docs/api-stability.md`](docs/api-stability.md)
 - Durability: [`docs/durability.md`](docs/durability.md)
+- Testing and soak: [`docs/testing.md`](docs/testing.md)
 - Windows testing: [`docs/windows-testing.md`](docs/windows-testing.md)
 - Benchmark: [`docs/benchmarks.md`](docs/benchmarks.md)
 - Release process: [`docs/release.md`](docs/release.md)

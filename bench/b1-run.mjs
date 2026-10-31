@@ -1,14 +1,14 @@
-import { execFileSync } from 'node:child_process';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { performance } from 'node:perf_hooks';
+import { execFileSync } from "node:child_process";
+import { mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { performance } from "node:perf_hooks";
 
-import { TurboQuantIndex } from '../index.js';
+import { TurboQuantIndex } from "../index.js";
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
-const CACHE = join(ROOT, 'bench/.cache');
-const RESULTS = join(ROOT, 'bench/results');
+const CACHE = join(ROOT, "bench/.cache");
+const RESULTS = join(ROOT, "bench/results");
 
 const shapes = {
   quick: { n: 20_000, dim: 768, nq: 100, k: 10, repeats: 20, single: 100 },
@@ -61,23 +61,32 @@ function percentile(values, p) {
 }
 
 function rssMb(pid) {
-  if (process.platform === 'linux' && pid) {
+  if (process.platform === "linux" && pid) {
     try {
-      const status = readFileSync(`/proc/${pid}/status`, 'utf8');
+      const status = readFileSync(`/proc/${pid}/status`, "utf8");
       const match = /VmRSS:\s+(\d+)\s+kB/.exec(status);
       return match ? Number(match[1]) / 1024 : 0;
     } catch {
       return 0;
     }
   }
-  if (process.platform === 'win32' && pid) {
+  if (process.platform === "win32" && pid) {
     try {
       const output = execFileSync(
-        'powershell.exe',
-        ['-NoProfile', '-Command', `(Get-Process -Id ${pid}).WorkingSet64`],
-        { encoding: 'utf8' },
+        "powershell.exe",
+        ["-NoProfile", "-Command", `(Get-Process -Id ${pid}).WorkingSet64`],
+        { encoding: "utf8" },
       ).trim();
       return Number(output) / 1024 / 1024;
+    } catch {
+      return 0;
+    }
+  }
+  if (process.platform === "darwin" && pid) {
+    try {
+      return (
+        Number(execFileSync("ps", ["-o", "rss=", "-p", String(pid)], { encoding: "utf8" })) / 1024
+      );
     } catch {
       return 0;
     }
@@ -92,7 +101,7 @@ function nodeRssMb() {
 function parseLines(text) {
   const result = {};
   for (const line of text.trim().split(/\r?\n/)) {
-    const [key, value] = line.split('=');
+    const [key, value] = line.split("=");
     result[key] = Number(value);
   }
   return result;
@@ -159,37 +168,37 @@ async function runSidecar(shape, dataset) {
 }
 
 function runCore(shape, dataset) {
-  execFileSync('cargo', ['build', '--release', '--example', 'core_bench'], {
+  execFileSync("cargo", ["build", "--release", "--example", "core_bench"], {
     cwd: ROOT,
-    stdio: 'inherit',
+    stdio: "inherit",
   });
   const output = execFileSync(
-    join(ROOT, 'target/release/examples/core_bench'),
+    join(ROOT, "target/release/examples/core_bench"),
     [
-      '--vectors',
+      "--vectors",
       dataset.vectorsPath,
-      '--queries',
+      "--queries",
       dataset.queriesPath,
-      '--dim',
+      "--dim",
       String(shape.dim),
-      '--nq',
+      "--nq",
       String(shape.nq),
-      '--k',
+      "--k",
       String(shape.k),
-      '--repeats',
+      "--repeats",
       String(shape.repeats),
     ],
-    { cwd: ROOT, encoding: 'utf8' },
+    { cwd: ROOT, encoding: "utf8" },
   );
   return parseLines(output);
 }
 
 function report(results, shape) {
   const lines = [
-    `## ${shape.name} (${shape.n} x ${shape.dim}, k=${shape.k})`,
-    '',
-    '| metric | B1 sidecar | direct core |',
-    '|---|---:|---:|',
+    `### ${shape.name} (${shape.n} x ${shape.dim}, k=${shape.k})`,
+    "",
+    "| metric | B1 sidecar | direct core |",
+    "|---|---:|---:|",
     `| cold start (median) | ${results.sidecar.coldStartMs.toFixed(1)} ms | n/a |`,
     `| add | ${results.sidecar.addMs.toFixed(1)} ms | ${results.core.add_ms.toFixed(1)} ms |`,
     `| single query p50 | ${results.sidecar.singleP50Ms.toFixed(3)} ms | ${results.core.single_p50_ms.toFixed(3)} ms |`,
@@ -199,15 +208,14 @@ function report(results, shape) {
     `| ${shape.nq}-query batch QPS | ${results.sidecar.batchQps.toFixed(0)} | ${results.core.batch_qps.toFixed(0)} |`,
     `| RSS after add: Node / sidecar | ${results.sidecar.rssAfterAdd.node.toFixed(1)} / ${results.sidecar.rssAfterAdd.sidecar.toFixed(1)} MB | ${results.core.rss_after_add_mb.toFixed(1)} MB |`,
     `| RSS after search: Node / sidecar | ${results.sidecar.rssAfterSearch.node.toFixed(1)} / ${results.sidecar.rssAfterSearch.sidecar.toFixed(1)} MB | n/a |`,
-    '',
+    "",
     `sidecar stats: ${JSON.stringify(results.sidecar.stats)}`,
-    '',
+    "",
   ];
-  return lines.join('\n');
+  return lines.join("\n");
 }
 
-const requested = process.argv.includes('--full') ? ['quick', 'full'] : ['quick'];
-const all = [];
+const requested = process.argv.includes("--full") ? ["quick", "full"] : ["quick"];
 for (const name of requested) {
   const shape = { name, ...shapes[name] };
   console.log(`running ${name}...`);
@@ -215,13 +223,39 @@ for (const name of requested) {
   const sidecar = await runSidecar(shape, dataset);
   const core = runCore(shape, dataset);
   const result = { shape, sidecar, core };
-  all.push(result);
   mkdirSync(RESULTS, { recursive: true });
   writeFileSync(
     join(RESULTS, `b1-${process.platform}-${process.arch}-${name}.json`),
     `${JSON.stringify(result, null, 2)}\n`,
   );
 }
-const reportText = `# B1 benchmark\n\nGenerated ${new Date().toISOString().slice(0, 10)} on \`${process.platform}/${process.arch}\`.\n\nB1 is the packaged JS client + Rust sidecar. Direct core is the in-process Rust baseline on the same raw data. This measures the package boundary, not recall or a server.\n\n${all.map((row) => report(row, row.shape)).join('\n')}\n## Caveats\n\n- The sidecar uses the package-owned framed stdio transport.\n- The direct core baseline has no IPC, process startup, or Node runtime.\n- Single-query sidecar numbers include process round-trips; batch numbers include one round-trip per batch.\n- This script collects one host at a time; run it on each supported platform.\n- Synthetic normalized vectors are a regression signal, not a production recall claim.\n`;
-writeFileSync(join(ROOT, 'docs/benchmarks.md'), reportText);
-console.log('wrote docs/benchmarks.md');
+
+const platformNames = {
+  "linux-x64": "Linux x64",
+  "win32-x64": "Windows x64",
+  "darwin-arm64": "macOS arm64",
+};
+const byPlatform = new Map();
+for (const file of readdirSync(RESULTS)) {
+  const match = /^b1-(.+?)-(quick|full)\.json$/.exec(file);
+  if (!match) continue;
+  const platform = match[1];
+  const result = JSON.parse(readFileSync(join(RESULTS, file), "utf8"));
+  if (!byPlatform.has(platform)) byPlatform.set(platform, []);
+  byPlatform.get(platform).push(result);
+}
+const sections = [...byPlatform.entries()]
+  .filter(([platform]) => platformNames[platform])
+  .toSorted(
+    ([a], [b]) => Object.keys(platformNames).indexOf(a) - Object.keys(platformNames).indexOf(b),
+  )
+  .map(([platform, rows]) => {
+    const order = { quick: 0, full: 1 };
+    const ordered = rows.toSorted(
+      (a, b) => (order[a.shape.name] ?? 9) - (order[b.shape.name] ?? 9),
+    );
+    return `## ${platformNames[platform]}\n\n${ordered.map((row) => report(row, row.shape)).join("\n")}`;
+  });
+const reportText = `# B1 benchmark\n\nGenerated ${new Date().toISOString().slice(0, 10)} on Linux x64, Windows x64, and macOS arm64.\n\nB1 is the packaged JS client + Rust sidecar. Direct core is the in-process Rust baseline on the same raw data. This measures the package boundary, not recall or a server.\n\n${sections.join("\n")}\n## Caveats\n\n- The sidecar uses the package-owned framed stdio transport.\n- The direct core baseline has no IPC, process startup, or Node runtime.\n- Single-query sidecar numbers include process round-trips; batch numbers include one round-trip per batch.\n- This script collects one host at a time; run it on each supported platform.\n- Synthetic normalized vectors are a regression signal, not a production recall claim.\n`;
+writeFileSync(join(ROOT, "docs/benchmarks.md"), reportText);
+console.log("wrote docs/benchmarks.md");

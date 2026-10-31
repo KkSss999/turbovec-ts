@@ -1,20 +1,20 @@
-import { expect, test } from 'bun:test';
-import { mkdtemp, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { expect, setDefaultTimeout, test } from "bun:test";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
-import { IdMapIndex, TurboQuantIndex } from '../index.js';
+import { IdMapIndex, TurboQuantIndex } from "../index.js";
+
+setDefaultTimeout(30_000);
 
 const vectors = new Float32Array([
-  1, 0, 0, 0, 0, 0, 0, 0,
-  0, 1, 0, 0, 0, 0, 0, 0,
-  0, 0, 1, 0, 0, 0, 0, 0,
+  1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,
 ]);
 const query = new Float32Array([1, 0, 0, 0, 0, 0, 0, 0]);
 
-test('dense add chunks larger batches', async () => {
+test("dense add chunks larger batches", async () => {
   const previous = process.env.TURBOVEC_ADD_CHUNK_BYTES;
-  process.env.TURBOVEC_ADD_CHUNK_BYTES = '65536';
+  process.env.TURBOVEC_ADD_CHUNK_BYTES = "65536";
   try {
     const index = new TurboQuantIndex(8, 4);
     const rows = 20_000;
@@ -29,7 +29,7 @@ test('dense add chunks larger batches', async () => {
   }
 });
 
-test('dense sidecar add, search, mask, stats, close', async () => {
+test("dense sidecar add, search, mask, stats, close", async () => {
   const index = new TurboQuantIndex(8, 4);
   await index.add(vectors);
   const result = await index.search(query, 2);
@@ -41,16 +41,16 @@ test('dense sidecar add, search, mask, stats, close', async () => {
   expect(masked.indices).toEqual([1]);
 
   const stats = await index.stats();
-  expect(stats.kind).toBe('dense');
+  expect(stats.kind).toBe("dense");
   expect(stats.len).toBe(3);
   expect(stats.serialized_bytes).toBeGreaterThan(0);
   await index.close();
   await index.close();
 });
 
-test('id map sidecar ids, allowlist, remove, iter and snapshot', async () => {
-  const dir = await mkdtemp(join(tmpdir(), 'tv-b1-'));
-  const path = join(dir, 'index.tvim');
+test("id map sidecar ids, allowlist, remove, iter and snapshot", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "tv-b1-"));
+  const path = join(dir, "index.tvim");
   try {
     const index = new IdMapIndex(8, 4);
     await index.addWithIds(vectors, new BigUint64Array([10n, 20n, 30n]));
@@ -75,9 +75,9 @@ test('id map sidecar ids, allowlist, remove, iter and snapshot', async () => {
   }
 });
 
-test('dense snapshot loads and CJS entry exports classes', async () => {
-  const dir = await mkdtemp(join(tmpdir(), 'tv-b1-'));
-  const path = join(dir, 'index.tv');
+test("dense snapshot loads and CJS entry exports classes", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "tv-b1-"));
+  const path = join(dir, "index.tv");
   try {
     const index = new TurboQuantIndex(8, 4);
     await index.add(vectors);
@@ -89,9 +89,45 @@ test('dense snapshot loads and CJS entry exports classes', async () => {
     expect((await loaded.search(query, 1)).indices).toEqual([0]);
     await loaded.close();
 
-    const cjs = require('../index.cjs');
-    expect(typeof cjs.TurboQuantIndex).toBe('function');
+    const cjs = require("../index.cjs");
+    expect(typeof cjs.TurboQuantIndex).toBe("function");
   } finally {
     await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("dense add rolls back earlier chunks after a later invalid chunk", async () => {
+  const previous = process.env.TURBOVEC_ADD_CHUNK_BYTES;
+  process.env.TURBOVEC_ADD_CHUNK_BYTES = "4096";
+  try {
+    const index = new TurboQuantIndex(8, 4);
+    const data = new Float32Array(129 * 8);
+    for (let row = 0; row < 128; row += 1) data[row * 8] = 1;
+    data[128 * 8] = Number.NaN;
+    await expect(index.add(data)).rejects.toBeInstanceOf(Error);
+    expect((await index.stats()).len).toBe(0);
+    await index.close();
+  } finally {
+    if (previous === undefined) delete process.env.TURBOVEC_ADD_CHUNK_BYTES;
+    else process.env.TURBOVEC_ADD_CHUNK_BYTES = previous;
+  }
+});
+
+test("id map addWithIds rolls back earlier chunks after a later duplicate", async () => {
+  const previous = process.env.TURBOVEC_ADD_CHUNK_BYTES;
+  process.env.TURBOVEC_ADD_CHUNK_BYTES = "4096";
+  try {
+    const index = new IdMapIndex(8, 4);
+    const data = new Float32Array(129 * 8);
+    for (let row = 0; row < 128; row += 1) data[row * 8] = 1;
+    const ids = new BigUint64Array(129);
+    for (let row = 0; row < 128; row += 1) ids[row] = BigInt(row);
+    ids[128] = 0n;
+    await expect(index.addWithIds(data, ids)).rejects.toBeInstanceOf(Error);
+    expect(Array.from(await index.iterIds())).toEqual([]);
+    await index.close();
+  } finally {
+    if (previous === undefined) delete process.env.TURBOVEC_ADD_CHUNK_BYTES;
+    else process.env.TURBOVEC_ADD_CHUNK_BYTES = previous;
   }
 });
