@@ -45,14 +45,26 @@ powershell.exe -NoProfile -Command "Set-Location 'G:\RustTemp\turbovec-node'; ca
 Expected result: the service integration suite passes on Windows x64. The tests cover dense and
 id-map indexes, persistence, malformed input, close semantics, and concurrent searches.
 
-Consumer example:
+Consumer examples:
 
 ```bash
 powershell.exe -NoProfile -Command "Set-Location 'G:\RustTemp\turbovec-node'; cargo run --manifest-path consumers/cli/Cargo.toml"
+powershell.exe -NoProfile -Command "Set-Location 'G:\RustTemp\turbovec-node'; cargo run --manifest-path consumers/http-server/Cargo.toml"
+powershell.exe -NoProfile -Command "Set-Location 'G:\RustTemp\turbovec-node'; cargo run --manifest-path consumers/ipc/Cargo.toml -- server"
 ```
 
-The Unix-socket IPC example is Unix-only; Windows consumers should use named pipes or another
-transport they own.
+The IPC example uses `interprocess` local sockets: Unix domain sockets on Unix and named pipes on
+Windows. Its server/client smoke test passes on Windows x64.
+
+## Verified
+
+On 2026-10-31 on Windows x64:
+
+- `cargo test --locked --all-targets`: 11 integration tests passed
+- `cargo clippy --all-targets -- -D warnings`: clean
+- CLI example: passed
+- HTTP example: `/search` returned the expected top-2
+- IPC example: named-pipe server/client returned the expected top-2
 
 ## Notes
 
