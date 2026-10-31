@@ -1,7 +1,10 @@
 # Service-mode migration
 
-Status: proposed, first phase started. The N-API binding remains the working adapter until the
-service reaches parity.
+Status: **superseded**. The project decided to remain library-only and align with the upstream
+Python SDK's in-process model. This document is kept as the rejected-design record. See
+[`architecture.md`](architecture.md).
+
+Original proposal: the N-API binding would be replaced by a Rust sidecar until parity.
 
 ## Decision
 

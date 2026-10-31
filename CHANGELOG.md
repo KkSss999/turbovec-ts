@@ -33,8 +33,9 @@ Prepared release candidate. Not published.
 
 ### Changed
 
-- Documented the service-mode migration path: Rust owns the index runtime, Node remains a thin
-  client. The N-API binding stays until parity and IPC benchmarks pass.
+- Clarified the product boundary: the package is an in-process library, not a server. Consumers
+  own HTTP/gRPC/CLI/IPC, queues, auth, and tenancy. Service-mode migration is explicitly
+  rejected and kept as an ADR. This aligns with the upstream Python SDK's PyO3 model.
 
 - Version moved from `0.0.1` to `0.1.1`.
 - Checkpoint serialization streams to a temp file instead of copying the full image in memory.

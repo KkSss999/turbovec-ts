@@ -196,7 +196,7 @@ test that builds and runs the app.
 ## Documentation
 
 - API stability: [`docs/api-stability.md`](docs/api-stability.md)
-- Service-mode migration: [`docs/service-migration.md`](docs/service-migration.md)
+- Architecture: [`docs/architecture.md`](docs/architecture.md)
 - Release process: [`docs/release.md`](docs/release.md)
 - Durability and platforms: [`docs/durability.md`](docs/durability.md)
 - Versioned checkpoints: [`docs/versioned-checkpoint.md`](docs/versioned-checkpoint.md)
