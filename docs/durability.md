@@ -1,43 +1,30 @@
-# Durability and platform status
+# Durability
 
 ## Modes
 
-`write(path, durable?)` and `checkpoint(path, durable?)` both default to durable.
+`write` and `checkpoint` default to the caller's choice of `Durability`:
 
-| Mode            | File fsync | Parent-dir fsync                     | Process crash            | Power loss                        |
-| --------------- | ---------- | ------------------------------------ | ------------------------ | --------------------------------- |
-| `durable=true`  | yes        | Unix; Windows has no directory fsync | old or complete new file | old or complete new file on Linux |
-| `durable=false` | no         | no                                   | old or complete new file | undefined; may lose old and new   |
+- `Durable`: fsync the file, rename, then fsync the parent directory on Unix
+- `Fast`: temp file + rename, skipping fsync
 
-`durable=false` is only for disposable or regenerable data. It is never safe as the only copy.
-See [versioned-checkpoint.md](versioned-checkpoint.md) for a fast, versioned pattern that keeps
-a durable previous generation.
+`Fast` is only process-crash safe. After a power loss the new file may be missing or truncated,
+and the previous file may also be lost. Use it only for disposable or regenerable data.
+`Durable` is the safe choice for a primary copy.
 
-If a durable checkpoint commits the rename but the parent-directory fsync fails,
-`index.lastWarning` reports it. The save is not reported as failed because the new file is
-already visible; failing the call would invite a destructive retry.
+## Single writer
 
-## Platform status (2026-10)
+`sync` incrementally writes to one path and must have a single writer. Do not call `sync` on the
+same path from multiple processes. `write`/`checkpoint` are full snapshots and can replace a
+destination atomically, but concurrent writers still need an application-level rule.
 
-| Target        | Compile check | Runtime smoke | Notes                                                                       |
-| ------------- | ------------- | ------------- | --------------------------------------------------------------------------- |
-| Linux x64     | yes           | yes           | packaged Electron smoke passes                                              |
-| Linux arm64   | `cargo check` | no            | needs a real arm64 smoke                                                    |
-| Windows x64   | `cargo check` | no            | rename uses `MoveFileExW` with `MOVEFILE_WRITE_THROUGH`; runtime unverified |
-| Windows arm64 | `cargo check` | no            | runtime unverified                                                          |
-| macOS x64     | `cargo check` | no            | runtime and physical-fsync semantics unverified                             |
-| macOS arm64   | `cargo check` | no            | runtime and physical-fsync semantics unverified                             |
+## Platform notes
 
-## Windows rename
+- Linux x64: integration tests cover local persistence.
+- Windows: the core's rename path is used; no directory fsync equivalent exists. Verify on the
+  target.
+- macOS: compile-checked; run the integration tests and a packaged consumer on arm64 before
+  claiming support.
+- Linux arm64, Windows arm64, macOS x64: compile-checked only until the target tests are run.
 
-The Windows checkpoint path uses `MoveFileExW` with `MOVEFILE_REPLACE_EXISTING |
-MOVEFILE_WRITE_THROUGH` instead of `std::fs::rename`. The existing retry for transient
-`ERROR_ACCESS_DENIED` and `ERROR_SHARING_VIOLATION` remains. Windows still has no directory
-fsync; NTFS metadata journaling is the remaining platform boundary.
-
-## macOS
-
-The code compiles for both macOS targets, but no macOS runtime test has been run. Before
-claiming power-loss durability on macOS, verify that `File::sync_all()` meets the required
-`F_FULLFSYNC` semantics on the target hardware and filesystem. A packaged Electron smoke on
-macOS is also still required.
+The service library does not add its own durability warning channel. File and format behavior is
+owned by the upstream core.

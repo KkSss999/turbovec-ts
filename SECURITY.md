@@ -2,8 +2,7 @@
 
 ## Supported versions
 
-`0.1.x` is a pre-release line. Security fixes target the latest published `0.1.x` version.
-Older versions may not receive fixes.
+`0.2.x` is a pre-release line. Security fixes target the latest `0.2.x` version.
 
 ## Reporting a vulnerability
 
@@ -15,23 +14,20 @@ https://github.com/KkSss999/turbovec-ts/security/advisories/new
 
 Do not open a public issue for a suspected vulnerability. Include:
 
-- affected version and platform
-- Node.js/Electron/Bun version
+- affected version and target
 - a minimal reproducer
 - expected and actual behavior
 - impact and any known workaround
 
-Do not include npm tokens, credentials, private datasets, or production index files.
+Do not include credentials, private datasets, or production index files.
 
 ## Scope
 
-Relevant areas include the native addon, input validation at the JS/native boundary, file
-loading and persistence, resource accounting, and the packaged Electron example.
-
-The Rust core lives in the sibling `turbovec` project. If the issue is in the core format or
-search implementation, report it upstream as well.
+Relevant areas include input validation, file loading and persistence, index lifecycle, and
+resource accounting. The crate does not ship a network listener or authentication layer; those
+are consumer responsibilities. The Rust core lives in the sibling `turbovec` project; report core
+format or kernel issues upstream as well.
 
 ## Response
 
-This is a small pre-1.0 project. Reports are handled on a best-effort basis; there is no
-guaranteed response or disclosure deadline yet.
+This is a small pre-1.0 project. Reports are handled on a best-effort basis.

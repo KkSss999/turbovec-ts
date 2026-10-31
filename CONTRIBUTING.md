@@ -2,58 +2,32 @@
 
 ## Requirements
 
-- Bun 1.4.4+
 - Rust 1.89+
-- Node.js 20.17+
-- The sibling `../turbovec/turbovec` core crate
-
-Python is only needed for the optional format-interop tests.
-
-## Setup
-
-```bash
-bun install
-bun run build:debug
-```
-
-Use Bun for dependency installation and scripts. Do not commit `node_modules/`, `target/`,
-native build outputs, `.npmrc`, or generated `native.*` files.
+- The sibling `../turbovec` core checkout
 
 ## Checks
 
 ```bash
-bun run check          # format, lint, typecheck
-bun run test           # TypeScript/native suite
-bun run release:check  # version, file, and package consistency
+cargo fmt --check
+cargo clippy --all-targets -- -D warnings
+cargo test
+cargo doc --no-deps
 ```
 
-When changing the on-disk format boundary, run the strict Python check:
+## Scope
 
-```bash
-TURBOVEC_PYTHON=/path/to/venv/bin/python bun run test:interop
-```
+This crate is a library. Do not add a network listener, daemon, IPC server, auth layer, or global
+queue. Consumers own transports and admission control. Keep the service API independent of any
+specific server.
 
-When changing Rust or the native boundary, also run:
+## Tests
 
-```bash
-bun run build:debug
-bun run smoke:electron   # Linux x64 reference smoke
-```
+- New behavior needs a test that fails without the change.
+- Cover both `IndexKind` variants when a change affects shared code.
+- Test malformed lengths, closed services, persistence failures, and concurrency where relevant.
+- Do not claim platform support from compilation alone; run the integration tests on the target.
 
-## Platform changes
+## Changes
 
-Do not claim a platform is supported because it compiles. A platform is supported only after a
-real load, CRUD/search, persistence, and packaged integration smoke on that target. Record the
-result in `docs/durability.md` and the changelog.
-
-## API and tests
-
-- Keep the public surface documented in `index.d.ts` and `docs/api-stability.md`.
-- New behavior needs a test that can fail without the change.
-- Add user-visible changes to `CHANGELOG.md` under `Unreleased` or the next version.
-- Do not add CI, release automation, or npm publication without explicit maintainer approval.
-
-## Pull requests
-
-Keep changes focused. Explain the user-visible behavior, the tests run, and any platform or
-durability caveat. Do not include secrets or generated binaries.
+Keep changes focused. Add user-visible changes to `CHANGELOG.md` and update the API stability
+notes. Do not publish to crates.io without explicit maintainer approval.
