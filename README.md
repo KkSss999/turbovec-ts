@@ -5,7 +5,7 @@ sidecar. Consumers install the package, import the API, and do not need a Rust t
 
 ## Status
 
-**0.3.1, published.**
+**0.3.2, published.**
 
 - JavaScript/TypeScript API in `index.js` / `index.cjs` / `index.d.ts`
 - Rust runtime in the bundled `turbovecd` sidecar
@@ -88,7 +88,7 @@ cp target/release/turbovecd bin/linux-x64/turbovecd
 
 bun test
 bun scripts/soak.mjs
-bun pm pack --filename turbovec-ts-0.3.1.tgz
+bun pm pack --filename turbovec-ts-0.3.2.tgz
 ```
 
 `bun test` covers the public smoke path, chunk rollback, concurrent requests, repeated searches,

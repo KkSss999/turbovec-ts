@@ -1,6 +1,6 @@
 {
   "name": "turbovec-ts",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Node.js API for turbovec, backed by a bundled Rust sidecar",
   "license": "MIT",
   "type": "module",

@@ -1,6 +1,6 @@
 [package]
 name = "turbovec-service"
-version = "0.3.1"
+version = "0.3.2"
 edition = "2021"
 rust-version = "1.89"
 description = "Rust service-layer API for turbovec vector indexes"
