@@ -565,6 +565,7 @@ dependencies = [
  "napi",
  "napi-build",
  "napi-derive",
+ "rayon",
  "turbovec",
  "windows-sys",
 ]

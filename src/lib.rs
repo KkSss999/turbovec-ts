@@ -2,9 +2,9 @@ use std::ffi::OsString;
 use std::fs::{File, OpenOptions};
 use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::time::{Duration, SystemTime};
 use std::sync::atomic::{AtomicI64, AtomicU64, Ordering};
 use std::sync::{Arc, RwLock};
+use std::time::{Duration, SystemTime};
 
 use napi::bindgen_prelude::*;
 use napi_derive::napi;
@@ -114,7 +114,10 @@ fn create_checkpoint_tmp(path: &Path) -> std::io::Result<(File, PathBuf)> {
     }
 
     Err(last_error.unwrap_or_else(|| {
-        std::io::Error::new(std::io::ErrorKind::AlreadyExists, "could not create temp file")
+        std::io::Error::new(
+            std::io::ErrorKind::AlreadyExists,
+            "could not create temp file",
+        )
     }))
 }
 
@@ -254,14 +257,11 @@ where
     }
 }
 
-
 fn estimated_bytes(dim: usize, bit_width: usize, n: usize, with_ids: bool) -> f64 {
     let codes_per_byte = 8 / bit_width;
     let n_byte_groups = dim / codes_per_byte;
     let n_blocks = n.saturating_add(31) / 32;
-    let codes = n_blocks
-        .saturating_mul(n_byte_groups)
-        .saturating_mul(32);
+    let codes = n_blocks.saturating_mul(n_byte_groups).saturating_mul(32);
     let scales = n.saturating_mul(4);
     let calibration = dim.saturating_mul(4).saturating_mul(2);
     let ids = if with_ids { n.saturating_mul(8) } else { 0 };
@@ -387,7 +387,12 @@ impl TurboQuantIndex {
         mask: Option<Uint8Array>,
     ) -> Result<SearchResult> {
         let data = queries.to_vec();
-        let mask = mask.map(|m| m.to_vec().into_iter().map(|b| b != 0).collect::<Vec<bool>>());
+        let mask = mask.map(|m| {
+            m.to_vec()
+                .into_iter()
+                .map(|b| b != 0)
+                .collect::<Vec<bool>>()
+        });
         let inner = Arc::clone(&self.inner);
 
         napi::tokio::task::spawn_blocking(move || -> Result<SearchResult> {
@@ -529,7 +534,9 @@ impl TurboQuantIndex {
     #[napi(getter)]
     pub fn serialized_length(&self) -> Result<f64> {
         let guard = self.inner.read().map_err(|_| lock_error())?;
-        Ok(guard.as_ref().map_or(0.0, |index| index.serialized_len() as f64))
+        Ok(guard
+            .as_ref()
+            .map_or(0.0, |index| index.serialized_len() as f64))
     }
 
     #[napi]
@@ -598,11 +605,7 @@ impl TurboQuantIndex {
 
     #[napi(getter)]
     pub fn last_warning(&self) -> Result<Option<String>> {
-        Ok(self
-            .last_warning
-            .read()
-            .map_err(|_| lock_error())?
-            .clone())
+        Ok(self.last_warning.read().map_err(|_| lock_error())?.clone())
     }
 
     #[napi(getter)]
@@ -958,11 +961,7 @@ impl IdMapIndex {
 
     #[napi(getter)]
     pub fn last_warning(&self) -> Result<Option<String>> {
-        Ok(self
-            .last_warning
-            .read()
-            .map_err(|_| lock_error())?
-            .clone())
+        Ok(self.last_warning.read().map_err(|_| lock_error())?.clone())
     }
 
     #[napi(getter)]

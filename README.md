@@ -177,6 +177,15 @@ Compares the wrapped public API against the generated native loader on a synthet
 10K x 1536 index. Use it to check that the error-wrapping Proxy stays within noise on
 your machine.
 
+Full binding benchmark: recall@k, latency, QPS, RSS, and backpressure against the Rust core:
+
+```bash
+bun run bench:quick   # fast loop
+bun run bench:all     # quick, 2-bit, uniform floor, and 100K x 1536
+```
+
+See [`docs/benchmarks.md`](docs/benchmarks.md) and [`bench/README.md`](bench/README.md).
+
 ## Electron
 
 Use a `utilityProcess` that owns the index; the renderer talks over narrow IPC. See
@@ -190,6 +199,7 @@ test that builds and runs the app.
 - Release process: [`docs/release.md`](docs/release.md)
 - Durability and platforms: [`docs/durability.md`](docs/durability.md)
 - Versioned checkpoints: [`docs/versioned-checkpoint.md`](docs/versioned-checkpoint.md)
+- Performance, recall, memory, and backpressure: [`docs/benchmarks.md`](docs/benchmarks.md)
 - Changelog: [`CHANGELOG.md`](CHANGELOG.md)
 
 ## License

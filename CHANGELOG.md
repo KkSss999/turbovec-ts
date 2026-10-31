@@ -28,6 +28,8 @@ Prepared release candidate. Not published.
 - Packaged Electron utilityProcess example and Linux x64 smoke test.
 - Optional Python format-interop tests with a strict version gate.
 - Release preflight, API stability policy, durability notes, and versioned-checkpoint recipe.
+- Rust-vs-Node benchmark harness for recall, latency, memory, and backpressure, with raw JSON
+  results and a generated report.
 
 ### Changed
 

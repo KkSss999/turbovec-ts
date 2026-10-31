@@ -6,6 +6,7 @@ target/
 dist/
 npm/
 coverage/
+bench/.cache/
 *.tgz
 *.node
 *.so
