@@ -12,6 +12,23 @@ const vectors = new Float32Array([
 ]);
 const query = new Float32Array([1, 0, 0, 0, 0, 0, 0, 0]);
 
+test('dense add chunks larger batches', async () => {
+  const previous = process.env.TURBOVEC_ADD_CHUNK_BYTES;
+  process.env.TURBOVEC_ADD_CHUNK_BYTES = '65536';
+  try {
+    const index = new TurboQuantIndex(8, 4);
+    const rows = 20_000;
+    const data = new Float32Array(rows * 8);
+    for (let row = 0; row < rows; row += 1) data[row * 8] = 1;
+    await index.add(data);
+    expect((await index.stats()).len).toBe(rows);
+    await index.close();
+  } finally {
+    if (previous === undefined) delete process.env.TURBOVEC_ADD_CHUNK_BYTES;
+    else process.env.TURBOVEC_ADD_CHUNK_BYTES = previous;
+  }
+});
+
 test('dense sidecar add, search, mask, stats, close', async () => {
   const index = new TurboQuantIndex(8, 4);
   await index.add(vectors);

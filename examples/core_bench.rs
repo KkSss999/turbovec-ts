@@ -75,6 +75,24 @@ fn read_f32(path: &str) -> Vec<f32> {
         .collect()
 }
 
+fn rss_mb() -> f64 {
+    let Ok(status) = fs::read_to_string("/proc/self/status") else {
+        return 0.0;
+    };
+    for line in status.lines() {
+        if let Some(rest) = line.strip_prefix("VmRSS:") {
+            if let Some(kb) = rest
+                .split_whitespace()
+                .next()
+                .and_then(|v| v.parse::<f64>().ok())
+            {
+                return kb / 1024.0;
+            }
+        }
+    }
+    0.0
+}
+
 fn median(mut values: Vec<f64>) -> f64 {
     values.sort_by(f64::total_cmp);
     values[values.len() / 2]
@@ -91,6 +109,7 @@ fn main() {
     index.add_2d(&vectors, dim).unwrap();
     index.prepare();
     let add_ms = start.elapsed().as_secs_f64() * 1e3;
+    let rss_after_add_mb = rss_mb();
 
     let query = &queries[..dim];
     for _ in 0..10 {
@@ -135,4 +154,5 @@ fn main() {
     println!("single_qps={:.1}", 1000.0 / single_median);
     println!("batch_p50_ms={:.3}", batch_median);
     println!("batch_qps={:.1}", args.nq as f64 / (batch_median / 1e3));
+    println!("rss_after_add_mb={rss_after_add_mb:.3}");
 }

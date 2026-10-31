@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { performance } from 'node:perf_hooks';
@@ -60,6 +60,35 @@ function percentile(values, p) {
   return sorted[Math.min(sorted.length - 1, Math.floor((p / 100) * sorted.length))] ?? 0;
 }
 
+function rssMb(pid) {
+  if (process.platform === 'linux' && pid) {
+    try {
+      const status = readFileSync(`/proc/${pid}/status`, 'utf8');
+      const match = /VmRSS:\s+(\d+)\s+kB/.exec(status);
+      return match ? Number(match[1]) / 1024 : 0;
+    } catch {
+      return 0;
+    }
+  }
+  if (process.platform === 'win32' && pid) {
+    try {
+      const output = execFileSync(
+        'powershell.exe',
+        ['-NoProfile', '-Command', `(Get-Process -Id ${pid}).WorkingSet64`],
+        { encoding: 'utf8' },
+      ).trim();
+      return Number(output) / 1024 / 1024;
+    } catch {
+      return 0;
+    }
+  }
+  return 0;
+}
+
+function nodeRssMb() {
+  return process.memoryUsage().rss / 1024 / 1024;
+}
+
 function parseLines(text) {
   const result = {};
   for (const line of text.trim().split(/\r?\n/)) {
@@ -86,9 +115,12 @@ async function runSidecar(shape, dataset) {
   const index = new TurboQuantIndex(shape.dim, 4);
   await index.stats();
 
+  const sidecarPid = index.client?.child?.pid;
+  const rssBeforeAdd = { node: nodeRssMb(), sidecar: rssMb(sidecarPid) };
   let start = performance.now();
   await index.add(dataset.vectors);
   const addMs = performance.now() - start;
+  const rssAfterAdd = { node: nodeRssMb(), sidecar: rssMb(sidecarPid) };
 
   const single = [];
   const query = dataset.queries.subarray(0, shape.dim);
@@ -106,10 +138,14 @@ async function runSidecar(shape, dataset) {
     await index.search(dataset.queries, shape.k);
     batch.push(performance.now() - begin);
   }
+  const rssAfterSearch = { node: nodeRssMb(), sidecar: rssMb(sidecarPid) };
   const stats = await index.stats();
   await index.close();
 
   return {
+    rssBeforeAdd,
+    rssAfterAdd,
+    rssAfterSearch,
     coldStartMs: median(cold),
     addMs,
     singleP50Ms: percentile(single, 50),
@@ -161,6 +197,8 @@ function report(results, shape) {
     `| single query QPS | ${results.sidecar.singleQps.toFixed(0)} | ${results.core.single_qps.toFixed(0)} |`,
     `| ${shape.nq}-query batch p50 | ${results.sidecar.batchP50Ms.toFixed(2)} ms | ${results.core.batch_p50_ms.toFixed(2)} ms |`,
     `| ${shape.nq}-query batch QPS | ${results.sidecar.batchQps.toFixed(0)} | ${results.core.batch_qps.toFixed(0)} |`,
+    `| RSS after add: Node / sidecar | ${results.sidecar.rssAfterAdd.node.toFixed(1)} / ${results.sidecar.rssAfterAdd.sidecar.toFixed(1)} MB | ${results.core.rss_after_add_mb.toFixed(1)} MB |`,
+    `| RSS after search: Node / sidecar | ${results.sidecar.rssAfterSearch.node.toFixed(1)} / ${results.sidecar.rssAfterSearch.sidecar.toFixed(1)} MB | n/a |`,
     '',
     `sidecar stats: ${JSON.stringify(results.sidecar.stats)}`,
     '',
@@ -179,8 +217,11 @@ for (const name of requested) {
   const result = { shape, sidecar, core };
   all.push(result);
   mkdirSync(RESULTS, { recursive: true });
-  writeFileSync(join(RESULTS, `b1-${name}.json`), `${JSON.stringify(result, null, 2)}\n`);
+  writeFileSync(
+    join(RESULTS, `b1-${process.platform}-${process.arch}-${name}.json`),
+    `${JSON.stringify(result, null, 2)}\n`,
+  );
 }
-const reportText = `# B1 benchmark\n\nGenerated ${new Date().toISOString().slice(0, 10)} on \`${process.platform}/${process.arch}\`.\n\nB1 is the packaged JS client + Rust sidecar. Direct core is the in-process Rust baseline on the same raw data. This measures the package boundary, not recall or a server.\n\n${all.map((row) => report(row, row.shape)).join('\n')}\n## Caveats\n\n- The sidecar uses the package-owned framed stdio transport.\n- The direct core baseline has no IPC, process startup, or Node runtime.\n- Single-query sidecar numbers include process round-trips; batch numbers include one round-trip per batch.\n- Only Linux x64 is collected by this script. Windows x64 must be run separately.\n- Synthetic normalized vectors are a regression signal, not a production recall claim.\n`;
+const reportText = `# B1 benchmark\n\nGenerated ${new Date().toISOString().slice(0, 10)} on \`${process.platform}/${process.arch}\`.\n\nB1 is the packaged JS client + Rust sidecar. Direct core is the in-process Rust baseline on the same raw data. This measures the package boundary, not recall or a server.\n\n${all.map((row) => report(row, row.shape)).join('\n')}\n## Caveats\n\n- The sidecar uses the package-owned framed stdio transport.\n- The direct core baseline has no IPC, process startup, or Node runtime.\n- Single-query sidecar numbers include process round-trips; batch numbers include one round-trip per batch.\n- This script collects one host at a time; run it on each supported platform.\n- Synthetic normalized vectors are a regression signal, not a production recall claim.\n`;
 writeFileSync(join(ROOT, 'docs/benchmarks.md'), reportText);
 console.log('wrote docs/benchmarks.md');

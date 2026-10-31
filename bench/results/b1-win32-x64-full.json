@@ -1,0 +1,51 @@
+{
+  "shape": {
+    "name": "full",
+    "n": 100000,
+    "dim": 1536,
+    "nq": 100,
+    "k": 64,
+    "repeats": 5,
+    "single": 50
+  },
+  "sidecar": {
+    "rssBeforeAdd": {
+      "node": 690.68359375,
+      "sidecar": 4.171875
+    },
+    "rssAfterAdd": {
+      "node": 690.69921875,
+      "sidecar": 96.20703125
+    },
+    "rssAfterSearch": {
+      "node": 693.046875,
+      "sidecar": 96.6328125
+    },
+    "coldStartMs": 152.42199999999957,
+    "addMs": 1402.2250999999997,
+    "singleP50Ms": 4.814199999998891,
+    "singleP95Ms": 6.125400000000809,
+    "singleP99Ms": 6.8312000000005355,
+    "singleQps": 207.71883178933786,
+    "batchP50Ms": 34.54370000000017,
+    "batchQps": 2894.883871733471,
+    "stats": {
+      "kind": "dense",
+      "dim": 1536,
+      "bits": 4,
+      "len": 100000,
+      "serialized_bytes": 78849636,
+      "estimated_bytes": 77216384
+    }
+  },
+  "core": {
+    "add_ms": 554.165,
+    "single_p50_ms": 4.7583,
+    "single_p95_ms": 5.7919,
+    "single_p99_ms": 6.1343,
+    "single_qps": 210.2,
+    "batch_p50_ms": 30.418,
+    "batch_qps": 3287.6,
+    "rss_after_add_mb": 0
+  }
+}
