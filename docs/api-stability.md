@@ -52,6 +52,7 @@ Supported binaries:
 
 ```text
 linux-x64
+linux-x64-musl
 win32-x64
 darwin-arm64
 ```

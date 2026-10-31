@@ -17,7 +17,8 @@ JS process never holds the index buffer. `sync` is single-writer per path.
 
 ## Platform notes
 
-- Linux x64: integration tests and packaged-client tests pass.
+- Linux x64: integration tests and packaged-client tests pass on glibc. The static musl sidecar
+  is smoke-tested with the package client.
 - Windows x64: native sidecar tests and packaged-client tests pass.
 - macOS arm64: native tests and the packaged client smoke pass.
 - Linux arm64, Windows arm64, macOS x64, Linux musl: unsupported.
