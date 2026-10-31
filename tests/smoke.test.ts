@@ -466,3 +466,17 @@ test.skipIf(process.platform === 'win32' || process.getuid?.() === 0)(
     }
   },
 );
+
+test('maps constructor errors to TurbovecError', () => {
+  let error: Error | undefined;
+  try {
+    new TurboQuantIndex(7, 4);
+  } catch (cause) {
+    error = cause instanceof Error ? cause : new Error(String(cause));
+  }
+
+  expect(error).toBeInstanceOf(TurbovecError);
+  if (error instanceof TurbovecError) {
+    expect(error.code).toBe('ERR_TURBOVEC_NATIVE');
+  }
+});

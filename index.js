@@ -62,7 +62,11 @@ function wrapClass(nativeClass) {
     if (!new.target) {
       throw new TypeError(`Class constructor ${nativeClass.name} cannot be invoked without 'new'`);
     }
-    return wrapInstance(Reflect.construct(nativeClass, args), nativeClass);
+    try {
+      return wrapInstance(Reflect.construct(nativeClass, args), nativeClass);
+    } catch (error) {
+      throw toTurbovecError(error);
+    }
   }
 
   Wrapped.prototype = nativeClass.prototype;
