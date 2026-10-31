@@ -25,6 +25,10 @@ Pre-release. Not published.
 
 - B2 consumer-side adapter examples and pmem integration instructions.
 
+### API
+
+- `0.3.x` JS API surface is frozen; see `docs/api-stability.md`.
+
 ## [0.2.0] - 2026-10-31
 
 Pre-release. Not published.

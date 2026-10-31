@@ -94,6 +94,7 @@ Windows x64 uses `target/release/turbovecd.exe` copied to `bin/win32-x64/`.
 - API stability: [`docs/api-stability.md`](docs/api-stability.md)
 - Durability: [`docs/durability.md`](docs/durability.md)
 - Windows testing: [`docs/windows-testing.md`](docs/windows-testing.md)
+- Benchmark: [`docs/benchmarks.md`](docs/benchmarks.md)
 - Release process: [`docs/release.md`](docs/release.md)
 
 ## License

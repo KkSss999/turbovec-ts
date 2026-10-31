@@ -13,6 +13,19 @@ The sidecar binary, framed stdio protocol, request ids, payload layout, and side
 management are implementation details. They may change between package versions without a
 public API break.
 
+## 0.3.x surface
+
+`TurboQuantIndex` methods: `add`, `swapRemove`, `search`, `checkpoint`, `write`, `sync`,
+`calibrate`, `prepare`, `stats`, `close`, `dispose`, and static `load`.
+
+`IdMapIndex` methods: `addWithIds`, `search`, `remove`, `contains`, `iterIds`, `checkpoint`,
+`write`, `sync`, `calibrate`, `prepare`, `stats`, `close`, `dispose`, and static `load`.
+
+Properties: `dim`, `bitWidth`.
+
+This surface is frozen for `0.3.x`: patch releases may add methods but must not rename or remove
+these. The sidecar protocol is private and may change independently.
+
 ## Version policy
 
 `0.3.x` is a pre-release line.

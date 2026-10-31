@@ -1,0 +1,38 @@
+{
+  "shape": {
+    "name": "full",
+    "n": 100000,
+    "dim": 1536,
+    "nq": 100,
+    "k": 64,
+    "repeats": 5,
+    "single": 50
+  },
+  "sidecar": {
+    "coldStartMs": 138.6931629999999,
+    "addMs": 2071.9820229999996,
+    "singleP50Ms": 5.316299000000072,
+    "singleP95Ms": 6.1515730000000985,
+    "singleP99Ms": 6.636290000000372,
+    "singleQps": 188.1007821418597,
+    "batchP50Ms": 39.53822299999956,
+    "batchQps": 2529.1981382168115,
+    "stats": {
+      "kind": "dense",
+      "dim": 1536,
+      "bits": 4,
+      "len": 100000,
+      "serialized_bytes": 78849636,
+      "estimated_bytes": 77216384
+    }
+  },
+  "core": {
+    "add_ms": 714.178,
+    "single_p50_ms": 5.5446,
+    "single_p95_ms": 6.4597,
+    "single_p99_ms": 7.0931,
+    "single_qps": 180.4,
+    "batch_p50_ms": 90.495,
+    "batch_qps": 1105
+  }
+}

@@ -3,8 +3,7 @@ AGENTS.md
 
 /target/
 /.cache/
+bench/.cache/
 *.swp
 .DS_Store
-consumers/*/target/
-consumers/*/Cargo.lock
 *.tgz
